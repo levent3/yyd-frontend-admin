@@ -1,0 +1,18 @@
+<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+  <!-- Red Heart/Medical Cross Symbol -->
+  <g transform="translate(10, 15)">
+    <circle cx="15" cy="15" r="18" fill="#e50019"/>
+    <rect x="10" y="5" width="10" height="20" fill="white"/>
+    <rect x="5" y="10" width="20" height="10" fill="white"/>
+  </g>
+
+  <!-- YYD Text -->
+  <text x="50" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#333">
+    YYD
+  </text>
+
+  <!-- Yeryüzü Doktorları -->
+  <text x="50" y="48" font-family="Arial, sans-serif" font-size="10" fill="#666">
+    YERYÜZÜ DOKTORLARI
+  </text>
+</svg>

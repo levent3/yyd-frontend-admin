@@ -1,0 +1,89 @@
+// Custom fixes for sidebar overlap issues
+
+// Z-index hierarchy
+.modal {
+  z-index: 1050 !important;
+}
+
+.modal-backdrop {
+  z-index: 1040 !important;
+}
+
+// Header and its dropdowns should be accessible
+.page-header {
+  z-index: 99 !important;
+
+  .onhover-show-div,
+  .profile-dropdown,
+  .notification-dropdown,
+  .cart-dropdown,
+  .bookmark-flip {
+    z-index: 100 !important;
+  }
+}
+
+// Fix sidebar overlap - Force sidebar to stay in its lane
+.page-wrapper.compact-wrapper {
+  // Sidebar should be fixed
+  .page-body-wrapper {
+    div.sidebar-wrapper {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      height: 100vh !important;
+      width: 265px !important;
+      z-index: 9 !important;
+
+      &.close_icon {
+        width: 90px !important;
+      }
+    }
+  }
+
+  // Main content area - push it to the right
+  .page-header {
+    margin-left: 265px !important;
+    width: calc(100% - 265px) !important;
+    transition: all 0.3s ease !important;
+
+    &.close_icon {
+      margin-left: 90px !important;
+      width: calc(100% - 90px) !important;
+    }
+  }
+
+  .page-body-wrapper {
+    .page-body {
+      margin-left: 265px !important;
+      margin-top: 80px !important;
+      min-height: calc(100vh - 80px) !important;
+      transition: all 0.3s ease !important;
+      position: relative !important;
+    }
+
+    .footer {
+      margin-left: 265px !important;
+      transition: all 0.3s ease !important;
+    }
+
+    // When sidebar is minimized (close_icon class)
+    div.sidebar-wrapper.close_icon {
+      ~ .page-body {
+        margin-left: 90px !important;
+      }
+
+      ~ .footer {
+        margin-left: 90px !important;
+      }
+    }
+  }
+}
+
+// Ensure content containers don't overflow under sidebar
+.container-fluid {
+  max-width: 100% !important;
+}
+
+.card {
+  position: relative !important;
+}

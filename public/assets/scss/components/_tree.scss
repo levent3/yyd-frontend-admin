@@ -1,0 +1,26 @@
+/**=====================
+   2.34 Tree CSS Start
+==========================**/
+.tree {
+	.tree-branch-wrapper {
+		.tree-node {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+
+			.arrow {
+				width: 18px;
+				height: 18px;
+			}
+
+			.checkbox-icon {
+				fill: $primary-color;
+			}
+		}
+	}
+}
+
+
+/**=====================
+   2.34 Tree CSS Ends
+==========================**/

@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "avatar": "user/2.png",
+    "name": "Bucky",
+    "surname": "Barnes",
+    "age": "70",
+    "mobile": "+0 1800 76855"
+  },
+  {
+    "id": 2,
+    "avatar": "user/8.jpg",
+    "name": "Comeren",
+    "surname": "Diaz",
+    "age": "45",
+    "mobile": "+91 95145 76855"
+  },
+  {
+    "id": 3,
+    "avatar": "user/1.jpg",
+    "name": "Issa",
+    "surname": "Bell",
+    "age": "25",
+    "mobile": "+91 78458 76855"
+  },
+  {
+    "id": 4,
+    "avatar": "user/14.png",
+    "name": "Andew",
+    "surname": "Jon",
+    "age": "58",
+    "mobile": "+91 778788 76855"
+  }
+]

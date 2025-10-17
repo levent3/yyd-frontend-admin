@@ -1,0 +1,9 @@
+<svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+  <!-- Red circular background -->
+  <circle cx="25" cy="25" r="24" fill="#e50019"/>
+
+  <!-- White Y letter -->
+  <text x="25" y="35" font-family="Arial, sans-serif" font-size="30" font-weight="bold" fill="white" text-anchor="middle">
+    Y
+  </text>
+</svg>

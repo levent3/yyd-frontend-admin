@@ -2,7 +2,7 @@ import { sidebarMenuType } from "Types/LayoutDataType";
 
 export const MenuList: sidebarMenuType[] = [
   {
-    title: "Ana Menü",
+    title: "Dashboard",
     menucontent: "Dashboard",
     Items: [
       {
@@ -16,7 +16,7 @@ export const MenuList: sidebarMenuType[] = [
   },
   {
     title: "Yönetim",
-    menucontent: "Sistem Yönetimi",
+    menucontent: "Yönetim",
     Items: [
       {
         title: "Projeler",

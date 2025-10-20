@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, CardBody, Button, Badge, Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup, Label, Input } from 'reactstrap';
-import volunteerService, { Volunteer, VolunteerUpdateData } from '../../../services/volunteerService';
+import { Container, Row, Col, Card, CardBody, CardHeader, Button, Badge, Modal, ModalHeader, ModalBody, ModalFooter, Spinner } from 'reactstrap';
+import Breadcrumbs from "CommonElements/Breadcrumbs";
+import { Dashboard } from "utils/Constant";
+import volunteerService, { Volunteer } from '../../../services/volunteerService';
 import { toast } from 'react-toastify';
 
 const VolunteerApplications = () => {
@@ -20,8 +22,8 @@ const VolunteerApplications = () => {
     try {
       setLoading(true);
       const filters = filter !== 'all' ? { status: filter } : undefined;
-      const data = await volunteerService.getAll(filters);
-      setApplications(data);
+      const response = await volunteerService.getAll(filters);
+      setApplications(response.data);
     } catch (error) {
       console.error('Başvurular yüklenemedi:', error);
       toast.error('Başvurular yüklenemedi');
@@ -97,114 +99,139 @@ const VolunteerApplications = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="page-body">
+        <Breadcrumbs title="Gönüllüler" mainTitle="Gönüllü Başvuruları" parent={Dashboard} />
+        <Container fluid={true}>
+          <div className="text-center py-5">
+            <Spinner color="primary" />
+            <p className="mt-3">Yükleniyor...</p>
+          </div>
+        </Container>
+      </div>
+    );
+  }
+
   return (
-    <Container fluid>
-      <Row>
-        <Col sm={12}>
-          <Card>
-            <CardBody>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  <h5>Gönüllü Başvuruları</h5>
-                  {pendingCount > 0 && (
-                    <small className="text-muted">
-                      {pendingCount} yeni başvuru bekliyor
-                    </small>
-                  )}
+    <div className="page-body">
+      <Breadcrumbs title="Gönüllüler" mainTitle="Gönüllü Başvuruları" parent={Dashboard} />
+      <Container fluid={true}>
+        {/* Filter Buttons */}
+        <Row className="mb-3">
+          <Col sm={12}>
+            <Card>
+              <CardBody>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h6 className="mb-0">Filtrele</h6>
+                    {pendingCount > 0 && (
+                      <small className="text-muted">
+                        {pendingCount} yeni başvuru bekliyor
+                      </small>
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              <div className="mb-3">
-                <Button
-                  color={filter === 'all' ? 'primary' : 'light'}
-                  className="me-2"
-                  onClick={() => setFilter('all')}
-                >
-                  Tümü ({applications.length})
-                </Button>
-                <Button
-                  color={filter === 'new' ? 'primary' : 'light'}
-                  className="me-2"
-                  onClick={() => setFilter('new')}
-                >
-                  Yeni
-                </Button>
-                <Button
-                  color={filter === 'contacted' ? 'primary' : 'light'}
-                  className="me-2"
-                  onClick={() => setFilter('contacted')}
-                >
-                  İletişime Geçildi
-                </Button>
-                <Button
-                  color={filter === 'accepted' ? 'primary' : 'light'}
-                  className="me-2"
-                  onClick={() => setFilter('accepted')}
-                >
-                  Kabul Edildi
-                </Button>
-                <Button
-                  color={filter === 'rejected' ? 'primary' : 'light'}
-                  onClick={() => setFilter('rejected')}
-                >
-                  Reddedildi
-                </Button>
-              </div>
-
-              {loading ? (
-                <div className="text-center py-5">Yükleniyor...</div>
-              ) : applications.length === 0 ? (
-                <div className="text-center py-5 text-muted">
-                  Henüz başvuru yapılmamış
+                <div className="btn-group" role="group">
+                  <Button
+                    color={filter === 'all' ? 'primary' : 'light'}
+                    onClick={() => setFilter('all')}
+                  >
+                    Tümü ({applications.length})
+                  </Button>
+                  <Button
+                    color={filter === 'new' ? 'primary' : 'light'}
+                    onClick={() => setFilter('new')}
+                  >
+                    Yeni
+                  </Button>
+                  <Button
+                    color={filter === 'contacted' ? 'primary' : 'light'}
+                    onClick={() => setFilter('contacted')}
+                  >
+                    İletişime Geçildi
+                  </Button>
+                  <Button
+                    color={filter === 'accepted' ? 'primary' : 'light'}
+                    onClick={() => setFilter('accepted')}
+                  >
+                    Kabul Edildi
+                  </Button>
+                  <Button
+                    color={filter === 'rejected' ? 'primary' : 'light'}
+                    onClick={() => setFilter('rejected')}
+                  >
+                    Reddedildi
+                  </Button>
                 </div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>Ad Soyad</th>
-                        <th>E-posta</th>
-                        <th>Telefon</th>
-                        <th>Durum</th>
-                        <th>Başvuru Tarihi</th>
-                        <th className="text-end">İşlemler</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {applications.map((application) => (
-                        <tr key={application.id}>
-                          <td className="fw-bold">{application.fullName}</td>
-                          <td>{application.email}</td>
-                          <td>{application.phoneNumber || '-'}</td>
-                          <td>{getStatusBadge(application.status)}</td>
-                          <td>{formatDate(application.submittedAt)}</td>
-                          <td className="text-end">
-                            <Button
-                              color="info"
-                              size="sm"
-                              className="me-2"
-                              onClick={() => openDetailModal(application)}
-                            >
-                              Detay
-                            </Button>
-                            <Button
-                              color="danger"
-                              size="sm"
-                              onClick={() => handleDelete(application.id)}
-                            >
-                              Sil
-                            </Button>
-                          </td>
+              </CardBody>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Applications Table */}
+        <Row>
+          <Col sm={12}>
+            <Card>
+              <CardHeader>
+                <h5 className="mb-0">Başvuru Listesi</h5>
+              </CardHeader>
+              <CardBody>
+                {applications.length === 0 ? (
+                  <div className="text-center py-5 text-muted">
+                    Henüz başvuru yapılmamış
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-hover">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Ad Soyad</th>
+                          <th>E-posta</th>
+                          <th>Telefon</th>
+                          <th>Durum</th>
+                          <th>Başvuru Tarihi</th>
+                          <th className="text-end">İşlemler</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardBody>
-          </Card>
-        </Col>
-      </Row>
+                      </thead>
+                      <tbody>
+                        {applications.map((application) => (
+                          <tr key={application.id}>
+                            <td className="fw-bold">{application.fullName}</td>
+                            <td>{application.email}</td>
+                            <td>{application.phoneNumber || '-'}</td>
+                            <td>{getStatusBadge(application.status)}</td>
+                            <td>
+                              <small>{formatDate(application.submittedAt)}</small>
+                            </td>
+                            <td className="text-end">
+                              <Button
+                                color="info"
+                                size="sm"
+                                className="me-2"
+                                onClick={() => openDetailModal(application)}
+                              >
+                                Detay
+                              </Button>
+                              <Button
+                                color="danger"
+                                size="sm"
+                                onClick={() => handleDelete(application.id)}
+                              >
+                                Sil
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
 
       {/* Detail Modal */}
       <Modal isOpen={modal} toggle={closeModal} size="lg">
@@ -285,7 +312,7 @@ const VolunteerApplications = () => {
           </Button>
         </ModalFooter>
       </Modal>
-    </Container>
+    </div>
   );
 };
 

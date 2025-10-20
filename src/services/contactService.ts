@@ -45,7 +45,7 @@ const contactService = {
 
   // Mesaj durumunu güncelle (Admin)
   updateMessage: async (id: number, data: UpdateContactData) => {
-    const response = await api.patch(`/contact/${id}`, data);
+    const response = await api.put(`/contact/${id}`, data);
     return response.data;
   },
 

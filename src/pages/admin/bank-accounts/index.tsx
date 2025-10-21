@@ -1,12 +1,18 @@
+/**
+ * Bank Accounts Page - REFACTORED
+ */
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner, Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup, Label, Input } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup, Label, Input } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import donationService, { BankAccount, CreateBankAccountData } from "../../../services/donationService";
-import { toast } from "react-toastify";
 import { Edit, Trash2 } from "react-feather";
 
 const BankAccountsPage = () => {
+  const confirm = useConfirm();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
@@ -35,7 +41,7 @@ const BankAccountsPage = () => {
       setAccounts(data);
     } catch (error: any) {
       console.error('Banka hesapları yüklenirken hata:', error);
-      toast.error('Banka hesapları yüklenirken hata oluştu');
+      confirm.error('Hata!', 'Banka hesapları yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -82,19 +88,21 @@ const BankAccountsPage = () => {
   };
 
   const handleDelete = async (id: number, bankName: string) => {
-    if (!window.confirm(`"${bankName}" banka hesabını silmek istediğinize emin misiniz?`)) {
+    if (!(await confirm(`"${bankName}" banka hesabını silmek istediğinize emin misiniz?`, 'Bu işlem geri alınamaz.'))) {
       return;
     }
 
     try {
       await donationService.deleteBankAccount(id);
-      toast.success('Banka hesabı başarıyla silindi');
+      confirm.success('Başarılı!', 'Banka hesabı başarıyla silindi');
       fetchAccounts();
     } catch (error: any) {
       console.error('Banka hesabı silinirken hata:', error);
-      toast.error(error.response?.data?.message || 'Banka hesabı silinirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Banka hesabı silinirken hata oluştu');
     }
   };
+
+  if (loading) return <LoadingState message="Banka hesapları yükleniyor..." />;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;

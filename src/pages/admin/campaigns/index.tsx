@@ -1,7 +1,23 @@
+/**
+ * Campaigns Page
+ *
+ * REFACTORING NOTU:
+ * -----------------
+ * Bu sayfa refactor edildi:
+ * - formatCurrency → utils/formatters'dan import edildi (kod tekrarı azaldı)
+ * - Loading state → LoadingState component kullanıyor
+ * - window.confirm → useConfirm hook kullanıyor (SweetAlert2 ile daha iyi UX)
+ * - Empty state → EmptyState component kullanıyor
+ */
+
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import { formatCurrency } from "utils/formatters";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import donationService, { DonationCampaign } from "../../../services/donationService";
 import { toast } from "react-toastify";
 import { useRouter } from "next/router";
@@ -9,6 +25,7 @@ import { Edit, Trash2, Eye } from "react-feather";
 
 const CampaignsPage = () => {
   const router = useRouter();
+  const confirm = useConfirm();
   const [campaigns, setCampaigns] = useState<DonationCampaign[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,26 +47,19 @@ const CampaignsPage = () => {
   };
 
   const handleDelete = async (id: number, title: string) => {
-    if (!window.confirm(`"${title}" kampanyasını silmek istediğinize emin misiniz?`)) {
+    // useConfirm hook ile SweetAlert2 onay dialog'u
+    if (!(await confirm(`"${title}" kampanyasını silmek istediğinize emin misiniz?`, 'Bu işlem geri alınamaz.'))) {
       return;
     }
 
     try {
       await donationService.deleteCampaign(id);
-      toast.success('Kampanya başarıyla silindi');
+      confirm.success('Başarılı!', 'Kampanya başarıyla silindi');
       fetchCampaigns();
     } catch (error: any) {
       console.error('Kampanya silinirken hata:', error);
-      toast.error(error.response?.data?.message || 'Kampanya silinirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Kampanya silinirken hata oluştu');
     }
-  };
-
-  const formatCurrency = (amount?: number) => {
-    if (!amount) return '₺0';
-    return new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency: 'TRY',
-    }).format(amount);
   };
 
   const calculateProgress = (collected?: number, target?: number) => {
@@ -57,17 +67,9 @@ const CampaignsPage = () => {
     return Math.min((collected / target) * 100, 100);
   };
 
+  // LoadingState component ile loading state'i göster
   if (loading) {
-    return (
-      <div className="page-body">
-        <Container fluid={true}>
-          <div className="text-center py-5">
-            <Spinner color="primary" />
-            <p className="mt-2">Yükleniyor...</p>
-          </div>
-        </Container>
-      </div>
-    );
+    return <LoadingState message="Kampanyalar yükleniyor..." />;
   }
 
   return (
@@ -87,12 +89,11 @@ const CampaignsPage = () => {
               </CardHeader>
               <CardBody>
                 {campaigns.length === 0 ? (
-                  <div className="text-center py-5">
-                    <p className="text-muted">Henüz kampanya bulunmuyor.</p>
-                    <Button color="primary" onClick={() => router.push('/admin/campaigns/create')}>
-                      İlk Kampanyayı Oluştur
-                    </Button>
-                  </div>
+                  <EmptyState
+                    message="Henüz kampanya bulunmuyor"
+                    actionLabel="İlk Kampanyayı Oluştur"
+                    onAction={() => router.push('/admin/campaigns/create')}
+                  />
                 ) : (
                   <div className="table-responsive">
                     <Table hover>

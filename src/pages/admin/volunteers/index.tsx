@@ -1,11 +1,28 @@
+/**
+ * Volunteer Applications Page
+ *
+ * REFACTORING NOTU:
+ * -----------------
+ * Bu sayfa refactor edildi:
+ * - formatDate → utils/formatters'dan import edildi
+ * - Loading state → LoadingState component kullanıyor
+ * - Empty state → EmptyState component kullanıyor
+ * - window.confirm → useConfirm hook kullanıyor
+ * - toast.success/error → useConfirm hook kullanıyor
+ */
+
 import { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, CardBody, CardHeader, Button, Badge, Modal, ModalHeader, ModalBody, ModalFooter, Spinner } from 'reactstrap';
+import { Container, Row, Col, Card, CardBody, CardHeader, Button, Badge, Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import { Dashboard } from "utils/Constant";
+import { formatDate } from "utils/formatters";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import volunteerService, { Volunteer } from '../../../services/volunteerService';
-import { toast } from 'react-toastify';
 
 const VolunteerApplications = () => {
+  const confirm = useConfirm();
   const [applications, setApplications] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
@@ -26,7 +43,7 @@ const VolunteerApplications = () => {
       setApplications(response.data);
     } catch (error) {
       console.error('Başvurular yüklenemedi:', error);
-      toast.error('Başvurular yüklenemedi');
+      confirm.error('Hata!', 'Başvurular yüklenemedi');
     } finally {
       setLoading(false);
     }
@@ -42,29 +59,29 @@ const VolunteerApplications = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bu başvuruyu silmek istediğinizden emin misiniz?')) return;
+    if (!(await confirm('Bu başvuruyu silmek istediğinizden emin misiniz?', 'Bu işlem geri alınamaz.'))) return;
 
     try {
       await volunteerService.delete(id);
-      toast.success('Başvuru silindi');
+      confirm.success('Başarılı!', 'Başvuru silindi');
       fetchApplications();
       fetchPendingCount();
     } catch (error) {
       console.error('Başvuru silinemedi:', error);
-      toast.error('Başvuru silinemedi');
+      confirm.error('Hata!', 'Başvuru silinemedi');
     }
   };
 
   const handleStatusChange = async (id: number, newStatus: string) => {
     try {
       await volunteerService.update(id, { status: newStatus });
-      toast.success('Durum güncellendi');
+      confirm.success('Başarılı!', 'Durum güncellendi');
       fetchApplications();
       fetchPendingCount();
       setModal(false);
     } catch (error) {
       console.error('Durum güncellenemedi:', error);
-      toast.error('Durum güncellenemedi');
+      confirm.error('Hata!', 'Durum güncellenemedi');
     }
   };
 
@@ -89,28 +106,8 @@ const VolunteerApplications = () => {
     return <Badge color={statusInfo.color}>{statusInfo.text}</Badge>;
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('tr-TR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   if (loading) {
-    return (
-      <div className="page-body">
-        <Breadcrumbs title="Gönüllüler" mainTitle="Gönüllü Başvuruları" parent={Dashboard} />
-        <Container fluid={true}>
-          <div className="text-center py-5">
-            <Spinner color="primary" />
-            <p className="mt-3">Yükleniyor...</p>
-          </div>
-        </Container>
-      </div>
-    );
+    return <LoadingState message="Gönüllü başvuruları yükleniyor..." />;
   }
 
   return (
@@ -178,9 +175,7 @@ const VolunteerApplications = () => {
               </CardHeader>
               <CardBody>
                 {applications.length === 0 ? (
-                  <div className="text-center py-5 text-muted">
-                    Henüz başvuru yapılmamış
-                  </div>
+                  <EmptyState message="Henüz başvuru yapılmamış" />
                 ) : (
                   <div className="table-responsive">
                     <table className="table table-hover">

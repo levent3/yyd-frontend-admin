@@ -1,14 +1,30 @@
+/**
+ * Donations Page
+ *
+ * REFACTORING NOTU:
+ * -----------------
+ * Bu sayfa refactor edildi:
+ * - formatCurrency, formatDate → utils/formatters'dan import edildi
+ * - Loading state → LoadingState component kullanıyor
+ * - Empty state → EmptyState component kullanıyor
+ * - toast.success/error → useConfirm hook kullanıyor
+ */
+
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner, Input, FormGroup, Label } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Input, FormGroup, Label } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import { formatCurrency, formatDate } from "utils/formatters";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import donationService, { Donation } from "../../../services/donationService";
-import { toast } from "react-toastify";
 import { useRouter } from "next/router";
 import { Eye, Check, X } from "react-feather";
 
 const DonationsPage = () => {
   const router = useRouter();
+  const confirm = useConfirm();
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({
@@ -39,27 +55,12 @@ const DonationsPage = () => {
         paymentStatus: status,
         completedAt: status === 'completed' ? new Date().toISOString() : undefined
       } as any);
-      toast.success('Bağış durumu güncellendi');
+      confirm.success('Başarılı!', 'Bağış durumu güncellendi');
       fetchDonations();
     } catch (error: any) {
       console.error('Bağış güncellenirken hata:', error);
-      toast.error(error.response?.data?.message || 'Bağış güncellenirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Bağış güncellenirken hata oluştu');
     }
-  };
-
-  const formatCurrency = (amount: number, currency: string = 'TRY') => {
-    const symbol = currency === 'TRY' ? '₺' : currency === 'USD' ? '$' : '€';
-    return `${symbol}${amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleString('tr-TR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -88,16 +89,7 @@ const DonationsPage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="page-body">
-        <Container fluid={true}>
-          <div className="text-center py-5">
-            <Spinner color="primary" />
-            <p className="mt-2">Yükleniyor...</p>
-          </div>
-        </Container>
-      </div>
-    );
+    return <LoadingState message="Bağışlar yükleniyor..." />;
   }
 
   return (
@@ -162,9 +154,7 @@ const DonationsPage = () => {
               </CardHeader>
               <CardBody>
                 {donations.length === 0 ? (
-                  <div className="text-center py-5">
-                    <p className="text-muted">Henüz bağış bulunmuyor.</p>
-                  </div>
+                  <EmptyState message="Henüz bağış bulunmuyor" />
                 ) : (
                   <div className="table-responsive">
                     <Table hover>

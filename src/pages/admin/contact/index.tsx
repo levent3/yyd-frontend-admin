@@ -1,14 +1,31 @@
+/**
+ * Contact Messages Page
+ *
+ * REFACTORING NOTU:
+ * -----------------
+ * Bu sayfa refactor edildi:
+ * - formatDate → utils/formatters'dan import edildi
+ * - Loading state → LoadingState component kullanıyor
+ * - Empty state → EmptyState component kullanıyor
+ * - window.confirm → useConfirm hook kullanıyor
+ * - toast.success/error → useConfirm hook kullanıyor
+ */
+
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import { formatDate } from "utils/formatters";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import contactService, { ContactMessage } from "../../../services/contactService";
-import { toast } from "react-toastify";
 import { Eye, Trash2, CheckCircle } from "react-feather";
 import { PaginationInfo } from '../../../types/pagination';
 import Pagination from '../../../components/common/Pagination';
 
 const ContactPage = () => {
+  const confirm = useConfirm();
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ status: '' });
@@ -34,7 +51,7 @@ const ContactPage = () => {
       setPagination(pagination);
     } catch (error: any) {
       console.error('Mesajlar yüklenirken hata:', error);
-      toast.error('Mesajlar yüklenirken hata oluştu');
+      confirm.error('Hata!', 'Mesajlar yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -58,36 +75,26 @@ const ContactPage = () => {
   const handleUpdateStatus = async (id: number, status: 'read' | 'replied' | 'archived') => {
     try {
       await contactService.updateMessage(id, { status });
-      toast.success('Mesaj durumu güncellendi');
+      confirm.success('Başarılı!', 'Mesaj durumu güncellendi');
       fetchMessages();
       if (modal) setModal(false);
     } catch (error: any) {
       console.error('Mesaj durumu güncellenirken hata:', error);
-      toast.error(error.response?.data?.message || 'Mesaj durumu güncellenirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Mesaj durumu güncellenirken hata oluştu');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bu mesajı silmek istediğinizden emin misiniz?')) return;
+    if (!(await confirm('Bu mesajı silmek istediğinizden emin misiniz?', 'Bu işlem geri alınamaz.'))) return;
 
     try {
       await contactService.deleteMessage(id);
-      toast.success('Mesaj silindi');
+      confirm.success('Başarılı!', 'Mesaj silindi');
       fetchMessages();
     } catch (error: any) {
       console.error('Mesaj silinirken hata:', error);
-      toast.error(error.response?.data?.message || 'Mesaj silinirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Mesaj silinirken hata oluştu');
     }
-  };
-
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleString('tr-TR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -106,16 +113,7 @@ const ContactPage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="page-body">
-        <Container fluid={true}>
-          <div className="text-center py-5">
-            <Spinner color="primary" />
-            <p className="mt-2">Yükleniyor...</p>
-          </div>
-        </Container>
-      </div>
-    );
+    return <LoadingState message="Mesajlar yükleniyor..." />;
   }
 
   return (
@@ -158,9 +156,7 @@ const ContactPage = () => {
               </CardHeader>
               <CardBody>
                 {messages.length === 0 ? (
-                  <div className="text-center py-5">
-                    <p className="text-muted">Henüz mesaj bulunmuyor.</p>
-                  </div>
+                  <EmptyState message="Henüz mesaj bulunmuyor" />
                 ) : (
                   <div className="table-responsive">
                     <Table hover>

@@ -1,7 +1,24 @@
+/**
+ * News Page
+ *
+ * REFACTORING NOTU:
+ * -----------------
+ * Bu sayfa refactor edildi:
+ * - formatDate → utils/formatters'dan import edildi
+ * - Loading state → LoadingState component kullanıyor
+ * - Empty state → EmptyState component kullanıyor
+ * - window.confirm → useConfirm hook kullanıyor
+ * - toast.success/error → useConfirm hook kullanıyor
+ */
+
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter, Form } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import { formatDate } from "utils/formatters";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import newsService, { News, CreateNewsData, UpdateNewsData } from "../../../services/newsService";
 import uploadService from "../../../services/uploadService";
 import { toast } from "react-toastify";
@@ -10,6 +27,7 @@ import { PaginationInfo } from '../../../types/pagination';
 import Pagination from '../../../components/common/Pagination';
 
 const NewsPage = () => {
+  const confirm = useConfirm();
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ status: '' });
@@ -117,31 +135,31 @@ const NewsPage = () => {
     try {
       if (editingItem) {
         await newsService.updateNews(editingItem.id, formData as UpdateNewsData);
-        toast.success('Haber güncellendi');
+        confirm.success('Başarılı!', 'Haber güncellendi');
       } else {
         await newsService.createNews(formData);
-        toast.success('Haber oluşturuldu');
+        confirm.success('Başarılı!', 'Haber oluşturuldu');
       }
       toggleModal();
       fetchNews();
     } catch (error: any) {
       console.error('Haber kaydedilirken hata:', error);
-      toast.error(error.response?.data?.message || 'Haber kaydedilirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Haber kaydedilirken hata oluştu');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bu haberi silmek istediğinizden emin misiniz?')) return;
+    if (!(await confirm('Bu haberi silmek istediğinizden emin misiniz?', 'Bu işlem geri alınamaz.'))) return;
 
     try {
       await newsService.deleteNews(id);
-      toast.success('Haber silindi');
+      confirm.success('Başarılı!', 'Haber silindi');
       fetchNews();
     } catch (error: any) {
       console.error('Haber silinirken hata:', error);
-      toast.error(error.response?.data?.message || 'Haber silinirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Haber silinirken hata oluştu');
     }
   };
 
@@ -179,16 +197,6 @@ const NewsPage = () => {
     setFormData(prev => ({ ...prev, imageUrl: '' }));
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleString('tr-TR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'published':
@@ -203,16 +211,7 @@ const NewsPage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="page-body">
-        <Container fluid={true}>
-          <div className="text-center py-5">
-            <Spinner color="primary" />
-            <p className="mt-2">Yükleniyor...</p>
-          </div>
-        </Container>
-      </div>
-    );
+    return <LoadingState message="Haberler yükleniyor..." />;
   }
 
   return (
@@ -260,9 +259,11 @@ const NewsPage = () => {
               </CardHeader>
               <CardBody>
                 {news.length === 0 ? (
-                  <div className="text-center py-5">
-                    <p className="text-muted">Henüz haber bulunmuyor.</p>
-                  </div>
+                  <EmptyState
+                    message="Henüz haber bulunmuyor"
+                    actionLabel="Yeni Haber Ekle"
+                    onAction={toggleModal}
+                  />
                 ) : (
                   <div className="table-responsive">
                     <Table hover>

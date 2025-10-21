@@ -1,14 +1,21 @@
+/**
+ * Career Applications Page - REFACTORED
+ */
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import { formatDate } from "utils/formatters";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import careerService, { CareerApplication } from "../../../services/careerService";
-import { toast } from "react-toastify";
 import { Eye, Trash2, Download, CheckCircle, XCircle } from "react-feather";
 import { PaginationInfo } from '../../../types/pagination';
 import Pagination from '../../../components/common/Pagination';
 
 const CareersPage = () => {
+  const confirm = useConfirm();
   const [applications, setApplications] = useState<CareerApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ status: '' });
@@ -34,7 +41,7 @@ const CareersPage = () => {
       setPagination(pagination);
     } catch (error: any) {
       console.error('Başvurular yüklenirken hata:', error);
-      toast.error('Başvurular yüklenirken hata oluştu');
+      confirm.error('Hata!', 'Başvurular yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -58,36 +65,26 @@ const CareersPage = () => {
   const handleUpdateStatus = async (id: number, status: 'reviewing' | 'interviewed' | 'accepted' | 'rejected') => {
     try {
       await careerService.updateApplication(id, { status });
-      toast.success('Başvuru durumu güncellendi');
+      confirm.success('Başarılı!', 'Başvuru durumu güncellendi');
       fetchApplications();
       if (modal) setModal(false);
     } catch (error: any) {
       console.error('Başvuru durumu güncellenirken hata:', error);
-      toast.error(error.response?.data?.message || 'Başvuru durumu güncellenirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Başvuru durumu güncellenirken hata oluştu');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bu başvuruyu silmek istediğinizden emin misiniz?')) return;
+    if (!(await confirm('Bu başvuruyu silmek istediğinizden emin misiniz?', 'Bu işlem geri alınamaz.'))) return;
 
     try {
       await careerService.deleteApplication(id);
-      toast.success('Başvuru silindi');
+      confirm.success('Başarılı!', 'Başvuru silindi');
       fetchApplications();
     } catch (error: any) {
       console.error('Başvuru silinirken hata:', error);
-      toast.error(error.response?.data?.message || 'Başvuru silinirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Başvuru silinirken hata oluştu');
     }
-  };
-
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleString('tr-TR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -107,18 +104,7 @@ const CareersPage = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="page-body">
-        <Container fluid={true}>
-          <div className="text-center py-5">
-            <Spinner color="primary" />
-            <p className="mt-2">Yükleniyor...</p>
-          </div>
-        </Container>
-      </div>
-    );
-  }
+  if (loading) return <LoadingState message="Kariyer başvuruları yükleniyor..." />;
 
   return (
     <div className="page-body">

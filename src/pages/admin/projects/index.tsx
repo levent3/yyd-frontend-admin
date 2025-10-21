@@ -1,3 +1,15 @@
+/**
+ * Projects Page
+ *
+ * REFACTORING NOTU:
+ * -----------------
+ * Bu sayfa refactor edildi:
+ * - Loading state → LoadingState component kullanıyor
+ * - Empty state → EmptyState component kullanıyor
+ * - window.confirm → useConfirm hook kullanıyor
+ * - toast.success/error → useConfirm hook kullanıyor
+ */
+
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useEffect, useState } from "react";
 import {
@@ -5,14 +17,17 @@ import {
   Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup,
   Label, Input, FormFeedback, Nav, NavItem, NavLink, TabContent, TabPane
 } from "reactstrap";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import projectService, { Project, CreateProjectData } from "../../../services/projectService";
-import { toast } from "react-toastify";
 import { useAuth } from "../../../context/AuthContext";
 import { PaginationInfo } from '../../../types/pagination';
 import Pagination from '../../../components/common/Pagination';
 
 const ProjectsPage = () => {
   const { user } = useAuth();
+  const confirm = useConfirm();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -70,7 +85,7 @@ const ProjectsPage = () => {
       setProjects(data);
       setPagination(pagination);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Projeler yüklenirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Projeler yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -172,7 +187,7 @@ const ProjectsPage = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error('Lütfen zorunlu alanları doldurun');
+      confirm.error('Hata!', 'Lütfen zorunlu alanları doldurun');
       return;
     }
 
@@ -199,32 +214,32 @@ const ProjectsPage = () => {
 
       if (editMode && currentProject) {
         await projectService.updateProject(currentProject.id, projectData);
-        toast.success('Proje başarıyla güncellendi');
+        confirm.success('Başarılı!', 'Proje başarıyla güncellendi');
       } else {
         await projectService.createProject(projectData);
-        toast.success('Proje başarıyla oluşturuldu');
+        confirm.success('Başarılı!', 'Proje başarıyla oluşturuldu');
       }
 
       closeModal();
       fetchProjects();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Proje kaydedilirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Proje kaydedilirken hata oluştu');
     } finally {
       setUploading(false);
     }
   };
 
   const handleDelete = async (id: number, title: string) => {
-    if (!confirm(`"${title}" projesini silmek istediğinize emin misiniz?`)) {
+    if (!(await confirm(`"${title}" projesini silmek istediğinize emin misiniz?`, 'Bu işlem geri alınamaz.'))) {
       return;
     }
 
     try {
       await projectService.deleteProject(id);
-      toast.success('Proje başarıyla silindi');
+      confirm.success('Başarılı!', 'Proje başarıyla silindi');
       fetchProjects();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Proje silinirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Proje silinirken hata oluştu');
     }
   };
 
@@ -248,6 +263,10 @@ const ProjectsPage = () => {
     }
   };
 
+  if (loading) {
+    return <LoadingState message="Projeler yükleniyor..." />;
+  }
+
   return (
     <div className="page-body">
       <Breadcrumbs
@@ -269,12 +288,12 @@ const ProjectsPage = () => {
                   )}
                 </div>
 
-                {loading ? (
-                  <div className="text-center py-5">
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">Yükleniyor...</span>
-                    </div>
-                  </div>
+                {projects.length === 0 ? (
+                  <EmptyState
+                    message="Henüz proje bulunmamaktadır"
+                    actionLabel={canCreate ? "Yeni Proje Ekle" : undefined}
+                    onAction={canCreate ? openCreateModal : undefined}
+                  />
                 ) : (
                   <div className="table-responsive">
                     <Table hover>
@@ -372,12 +391,6 @@ const ProjectsPage = () => {
                         ))}
                       </tbody>
                     </Table>
-
-                    {projects.length === 0 && (
-                      <div className="text-center py-4 text-muted">
-                        Henüz proje bulunmamaktadır.
-                      </div>
-                    )}
                   </div>
                 )}
 

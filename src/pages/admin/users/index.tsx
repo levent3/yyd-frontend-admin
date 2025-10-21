@@ -1,15 +1,21 @@
+/**
+ * Users Page - REFACTORED
+ */
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useEffect, useState } from "react";
 import { Container, Row, Col, Card, CardBody, Table, Button, Badge, Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup, Label, Input, FormFeedback } from "reactstrap";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import userService, { User, CreateUserData, UpdateUserData } from "../../../services/userService";
 import roleService, { Role } from "../../../services/roleService";
-import { toast } from "react-toastify";
 import { useAuth } from "../../../context/AuthContext";
 import { PaginationInfo } from '../../../types/pagination';
 import Pagination from '../../../components/common/Pagination';
 
 const UsersPage = () => {
   const { user: currentUser } = useAuth();
+  const confirm = useConfirm();
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +55,7 @@ const UsersPage = () => {
       setUsers(data);
       setPagination(pagination);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Kullanıcılar yüklenirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Kullanıcılar yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -195,6 +201,8 @@ const UsersPage = () => {
       day: 'numeric'
     });
   };
+
+  if (loading) return <LoadingState message="Kullanıcılar yükleniyor..." />;
 
   return (
     <div className="page-body">

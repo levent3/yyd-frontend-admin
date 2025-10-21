@@ -1,10 +1,16 @@
+/**
+ * Roles Page - REFACTORED
+ */
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useEffect, useState } from "react";
 import { Container, Row, Col, Card, CardBody, Table, Button, Badge } from "reactstrap";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import roleService, { Role } from "../../../services/roleService";
-import { toast } from "react-toastify";
 
 const RolesPage = () => {
+  const confirm = useConfirm();
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,25 +24,27 @@ const RolesPage = () => {
       const data = await roleService.getAllRoles();
       setRoles(data);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Roller yüklenirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Roller yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`"${name}" rolünü silmek istediğinize emin misiniz?`)) {
+    if (!(await confirm(`"${name}" rolünü silmek istediğinize emin misiniz?`, 'Bu işlem geri alınamaz.'))) {
       return;
     }
 
     try {
       await roleService.deleteRole(id);
-      toast.success('Rol başarıyla silindi');
+      confirm.success('Başarılı!', 'Rol başarıyla silindi');
       fetchRoles();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Rol silinirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Rol silinirken hata oluştu');
     }
   };
+
+  if (loading) return <LoadingState message="Roller yükleniyor..." />;
 
   return (
     <div className="page-body">
@@ -57,12 +65,8 @@ const RolesPage = () => {
                   </Button>
                 </div>
 
-                {loading ? (
-                  <div className="text-center py-5">
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">Yükleniyor...</span>
-                    </div>
-                  </div>
+                {roles.length === 0 ? (
+                  <EmptyState message="Henüz rol bulunmamaktadır" />
                 ) : (
                   <div className="table-responsive">
                     <Table hover>
@@ -115,12 +119,6 @@ const RolesPage = () => {
                         ))}
                       </tbody>
                     </Table>
-
-                    {roles.length === 0 && (
-                      <div className="text-center py-4 text-muted">
-                        Henüz rol bulunmamaktadır.
-                      </div>
-                    )}
                   </div>
                 )}
               </CardBody>

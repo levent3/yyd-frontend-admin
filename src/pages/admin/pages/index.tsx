@@ -1,13 +1,20 @@
+/**
+ * Pages Management - REFACTORED
+ */
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter, Form } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter, Form } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import pageService, { Page } from "../../../services/pageService";
 import uploadService from "../../../services/uploadService";
 import { toast } from "react-toastify";
 import { Edit, Trash2, Plus, X, Eye } from "react-feather";
 
 const PagesManagement = () => {
+  const confirm = useConfirm();
   const [pages, setPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ status: '', pageType: '' });
@@ -50,11 +57,13 @@ const PagesManagement = () => {
       setPagination({ ...pagination, total: response.total });
     } catch (error: any) {
       console.error('Sayfalar yüklenirken hata:', error);
-      toast.error('Sayfalar yüklenirken hata oluştu');
+      confirm.error('Hata!', 'Sayfalar yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
   };
+
+  if (loading) return <LoadingState message="Sayfalar yükleniyor..." />;
 
   const toggleModal = () => {
     setModal(!modal);

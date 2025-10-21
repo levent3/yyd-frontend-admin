@@ -1,13 +1,21 @@
+/**
+ * Gallery Page - REFACTORED
+ */
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect, useRef } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Button, Badge, Spinner, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter, Form, Progress } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, CardHeader, Button, Badge, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter, Form, Progress } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import { formatDate } from "utils/formatters";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import galleryService, { GalleryItem, CreateGalleryItemData, UpdateGalleryItemData } from "../../../services/galleryService";
 import uploadService from "../../../services/uploadService";
 import { toast } from "react-toastify";
 import { Edit, Trash2, Plus, Image, Video, Upload } from "react-feather";
 
 const GalleryPage = () => {
+  const confirm = useConfirm();
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ mediaType: '' });
@@ -38,7 +46,7 @@ const GalleryPage = () => {
       setGallery(response.data);
     } catch (error: any) {
       console.error('Galeri yüklenirken hata:', error);
-      toast.error('Galeri yüklenirken hata oluştu');
+      confirm.error('Hata!', 'Galeri yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -119,35 +127,37 @@ const GalleryPage = () => {
     try {
       if (editingItem) {
         await galleryService.updateGalleryItem(editingItem.id, formData as UpdateGalleryItemData);
-        toast.success('Galeri öğesi güncellendi');
+        confirm.success('Başarılı!', 'Galeri öğesi güncellendi');
       } else {
         await galleryService.createGalleryItem(formData);
-        toast.success('Galeri öğesi oluşturuldu');
+        confirm.success('Başarılı!', 'Galeri öğesi oluşturuldu');
       }
       toggleModal();
       fetchGallery();
     } catch (error: any) {
       console.error('Galeri öğesi kaydedilirken hata:', error);
-      toast.error(error.response?.data?.message || 'Galeri öğesi kaydedilirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Galeri öğesi kaydedilirken hata oluştu');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bu galeri öğesini silmek istediğinizden emin misiniz?')) return;
+    if (!(await confirm('Bu galeri öğesini silmek istediğinizden emin misiniz?', 'Bu işlem geri alınamaz.'))) return;
 
     try {
       await galleryService.deleteGalleryItem(id);
-      toast.success('Galeri öğesi silindi');
+      confirm.success('Başarılı!', 'Galeri öğesi silindi');
       fetchGallery();
     } catch (error: any) {
       console.error('Galeri öğesi silinirken hata:', error);
-      toast.error(error.response?.data?.message || 'Galeri öğesi silinirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Galeri öğesi silinirken hata oluştu');
     }
   };
 
-  const formatDate = (date: Date) => {
+  if (loading) return <LoadingState message="Galeri yükleniyor..." />;
+
+  const formatDateLocal = (date: Date) => {
     return new Date(date).toLocaleString('tr-TR', {
       year: 'numeric',
       month: '2-digit',

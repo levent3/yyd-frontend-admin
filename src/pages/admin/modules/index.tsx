@@ -1,15 +1,21 @@
+/**
+ * Modules Page - REFACTORED
+ */
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import LoadingState from "../../../components/common/LoadingState";
+import EmptyState from "../../../components/common/EmptyState";
+import useConfirm from "../../../hooks/useConfirm";
 import moduleService, { Module } from "../../../services/moduleService";
-import { toast } from "react-toastify";
 import { useRouter } from "next/router";
 import { Edit, Trash2, Plus } from "react-feather";
 import SvgIcon from "CommonElements/Icons/SvgIcon";
 
 const ModulesPage = () => {
   const router = useRouter();
+  const confirm = useConfirm();
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,24 +30,24 @@ const ModulesPage = () => {
       setModules(data);
     } catch (error: any) {
       console.error('Modüller yüklenirken hata:', error);
-      toast.error('Modüller yüklenirken hata oluştu');
+      confirm.error('Hata!', 'Modüller yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (!window.confirm(`"${name}" modülünü silmek istediğinize emin misiniz?`)) {
+    if (!(await confirm(`"${name}" modülünü silmek istediğinize emin misiniz?`, 'Bu işlem geri alınamaz.'))) {
       return;
     }
 
     try {
       await moduleService.deleteModule(id);
-      toast.success('Modül başarıyla silindi');
+      confirm.success('Başarılı!', 'Modül başarıyla silindi');
       fetchModules();
     } catch (error: any) {
       console.error('Modül silinirken hata:', error);
-      toast.error(error.response?.data?.message || 'Modül silinirken hata oluştu');
+      confirm.error('Hata!', error.response?.data?.message || 'Modül silinirken hata oluştu');
     }
   };
 
@@ -64,18 +70,7 @@ const ModulesPage = () => {
     return (a.displayOrder || 0) - (b.displayOrder || 0);
   });
 
-  if (loading) {
-    return (
-      <div className="page-body">
-        <Container fluid={true}>
-          <div className="text-center py-5">
-            <Spinner color="primary" />
-            <p className="mt-2">Yükleniyor...</p>
-          </div>
-        </Container>
-      </div>
-    );
-  }
+  if (loading) return <LoadingState message="Modüller yükleniyor..." />;
 
   return (
     <div className="page-body">

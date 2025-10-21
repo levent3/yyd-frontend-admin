@@ -13,7 +13,7 @@
 
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter, Form } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter, Form, Nav, NavItem, NavLink, TabContent, TabPane } from "reactstrap";
 import { Dashboard } from "utils/Constant";
 import { formatDate } from "utils/formatters";
 import LoadingState from "../../../components/common/LoadingState";
@@ -38,11 +38,13 @@ const NewsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [formData, setFormData] = useState<CreateNewsData>({
-    title: '',
-    slug: '',
-    summary: '',
-    content: '',
+  const [activeTab, setActiveTab] = useState('tr');
+  const [formData, setFormData] = useState<any>({
+    translations: [
+      { language: 'tr', title: '', slug: '', summary: '', content: '' },
+      { language: 'en', title: '', slug: '', summary: '', content: '' },
+      { language: 'ar', title: '', slug: '', summary: '', content: '' }
+    ],
     imageUrl: '',
     status: 'draft'
   });
@@ -78,11 +80,13 @@ const NewsPage = () => {
     setModal(!modal);
     if (modal) {
       setEditingItem(null);
+      setActiveTab('tr');
       setFormData({
-        title: '',
-        slug: '',
-        summary: '',
-        content: '',
+        translations: [
+          { language: 'tr', title: '', slug: '', summary: '', content: '' },
+          { language: 'en', title: '', slug: '', summary: '', content: '' },
+          { language: 'ar', title: '', slug: '', summary: '', content: '' }
+        ],
         imageUrl: '',
         status: 'draft'
       });
@@ -91,14 +95,48 @@ const NewsPage = () => {
 
   const handleEdit = (item: News) => {
     setEditingItem(item);
+
+    // Backend'den gelen translations array'i kullan veya mevcut çeviriden oluştur
+    const existingTranslations = (item as any).translations || [];
+    const languages = ['tr', 'en', 'ar'];
+
+    // Her dil için translation oluştur
+    const translations = languages.map(lang => {
+      const existing = existingTranslations.find((t: any) => t.language === lang);
+      if (existing) {
+        return {
+          language: lang,
+          title: existing.title || '',
+          slug: existing.slug || '',
+          summary: existing.summary || '',
+          content: existing.content || ''
+        };
+      }
+      // Eğer çeviri yoksa, mevcut dil TR ise ondan al, yoksa boş bırak
+      if (lang === 'tr') {
+        return {
+          language: 'tr',
+          title: item.title || '',
+          slug: item.slug || '',
+          summary: item.summary || '',
+          content: item.content || ''
+        };
+      }
+      return {
+        language: lang,
+        title: '',
+        slug: '',
+        summary: '',
+        content: ''
+      };
+    });
+
     setFormData({
-      title: item.title,
-      slug: item.slug,
-      summary: item.summary || '',
-      content: item.content,
+      translations,
       imageUrl: item.imageUrl || '',
       status: item.status
     });
+    setActiveTab('tr');
     setModal(true);
   };
 
@@ -117,15 +155,31 @@ const NewsPage = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
 
-    if (name === 'title' && !editingItem) {
-      const slug = generateSlug(value);
-      setFormData(prev => ({ ...prev, slug }));
+    // Dil-bağımsız alanlar (imageUrl, status)
+    if (name === 'imageUrl' || name === 'status') {
+      setFormData((prev: any) => ({
+        ...prev,
+        [name]: value
+      }));
+      return;
     }
+
+    // Dil-bağımlı alanlar (title, slug, summary, content)
+    setFormData((prev: any) => {
+      const updatedTranslations = prev.translations.map((trans: any) => {
+        if (trans.language === activeTab) {
+          const updated = { ...trans, [name]: value };
+          // Title değiştiğinde slug'ı otomatik oluştur
+          if (name === 'title' && !editingItem) {
+            updated.slug = generateSlug(value);
+          }
+          return updated;
+        }
+        return trans;
+      });
+      return { ...prev, translations: updatedTranslations };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -133,11 +187,32 @@ const NewsPage = () => {
     setSaving(true);
 
     try {
+      // En az bir dilde title ve content olmalı
+      const hasValidTranslation = formData.translations.some(
+        (t: any) => t.title.trim() && t.content.trim()
+      );
+
+      if (!hasValidTranslation) {
+        toast.error('En az bir dilde başlık ve içerik girmelisiniz');
+        setSaving(false);
+        return;
+      }
+
+      // Boş olmayan çevirileri filtrele
+      const validTranslations = formData.translations.filter(
+        (t: any) => t.title.trim() && t.content.trim()
+      );
+
+      const submitData = {
+        ...formData,
+        translations: validTranslations
+      };
+
       if (editingItem) {
-        await newsService.updateNews(editingItem.id, formData as UpdateNewsData);
+        await newsService.updateNews(editingItem.id, submitData);
         confirm.success('Başarılı!', 'Haber güncellendi');
       } else {
-        await newsService.createNews(formData);
+        await newsService.createNews(submitData);
         confirm.success('Başarılı!', 'Haber oluşturuldu');
       }
       toggleModal();
@@ -340,57 +415,95 @@ const NewsPage = () => {
         </ModalHeader>
         <Form onSubmit={handleSubmit}>
           <ModalBody>
+            {/* Language Tabs */}
+            <Nav tabs className="mb-3">
+              <NavItem>
+                <NavLink
+                  className={activeTab === 'tr' ? 'active' : ''}
+                  onClick={() => setActiveTab('tr')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  🇹🇷 Türkçe
+                </NavLink>
+              </NavItem>
+              <NavItem>
+                <NavLink
+                  className={activeTab === 'en' ? 'active' : ''}
+                  onClick={() => setActiveTab('en')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  🇬🇧 English
+                </NavLink>
+              </NavItem>
+              <NavItem>
+                <NavLink
+                  className={activeTab === 'ar' ? 'active' : ''}
+                  onClick={() => setActiveTab('ar')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  🇸🇦 العربية
+                </NavLink>
+              </NavItem>
+            </Nav>
+
             <Row>
               <Col md={8}>
-                <FormGroup>
-                  <Label>Başlık *</Label>
-                  <Input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    required
-                    placeholder="Haber başlığı"
-                  />
-                </FormGroup>
+                <TabContent activeTab={activeTab}>
+                  {['tr', 'en', 'ar'].map(lang => {
+                    const translation = formData.translations.find((t: any) => t.language === lang) || {};
+                    return (
+                      <TabPane key={lang} tabId={lang}>
+                        <FormGroup>
+                          <Label>Başlık * ({lang.toUpperCase()})</Label>
+                          <Input
+                            type="text"
+                            name="title"
+                            value={translation.title || ''}
+                            onChange={handleChange}
+                            placeholder={`Haber başlığı (${lang.toUpperCase()})`}
+                          />
+                        </FormGroup>
 
-                <FormGroup>
-                  <Label>Slug (URL)</Label>
-                  <Input
-                    type="text"
-                    name="slug"
-                    value={formData.slug}
-                    onChange={handleChange}
-                    placeholder="haber-url"
-                    disabled
-                  />
-                  <small className="text-muted">Otomatik oluşturulur</small>
-                </FormGroup>
+                        <FormGroup>
+                          <Label>Slug (URL)</Label>
+                          <Input
+                            type="text"
+                            name="slug"
+                            value={translation.slug || ''}
+                            onChange={handleChange}
+                            placeholder="haber-url"
+                            disabled
+                          />
+                          <small className="text-muted">Otomatik oluşturulur</small>
+                        </FormGroup>
 
-                <FormGroup>
-                  <Label>Kısa Özet</Label>
-                  <Input
-                    type="textarea"
-                    name="summary"
-                    value={formData.summary}
-                    onChange={handleChange}
-                    rows={3}
-                    placeholder="Haber özeti"
-                  />
-                </FormGroup>
+                        <FormGroup>
+                          <Label>Kısa Özet ({lang.toUpperCase()})</Label>
+                          <Input
+                            type="textarea"
+                            name="summary"
+                            value={translation.summary || ''}
+                            onChange={handleChange}
+                            rows={3}
+                            placeholder={`Haber özeti (${lang.toUpperCase()})`}
+                          />
+                        </FormGroup>
 
-                <FormGroup>
-                  <Label>İçerik *</Label>
-                  <Input
-                    type="textarea"
-                    name="content"
-                    value={formData.content}
-                    onChange={handleChange}
-                    rows={12}
-                    placeholder="Haber içeriği"
-                    required
-                  />
-                </FormGroup>
+                        <FormGroup>
+                          <Label>İçerik * ({lang.toUpperCase()})</Label>
+                          <Input
+                            type="textarea"
+                            name="content"
+                            value={translation.content || ''}
+                            onChange={handleChange}
+                            rows={12}
+                            placeholder={`Haber içeriği (${lang.toUpperCase()})`}
+                          />
+                        </FormGroup>
+                      </TabPane>
+                    );
+                  })}
+                </TabContent>
               </Col>
 
               <Col md={4}>

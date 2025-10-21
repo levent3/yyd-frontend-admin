@@ -1,6 +1,6 @@
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Form, FormGroup, Label, Input, Button } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, CardHeader, Form, FormGroup, Label, Input, Button, Nav, NavItem, NavLink, TabContent, TabPane } from "reactstrap";
 import { Dashboard } from "utils/Constant";
 import projectService from "../../../services/projectService";
 import { toast } from "react-toastify";
@@ -8,9 +8,12 @@ import { useRouter } from "next/router";
 
 const ProjectCreate = () => {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState('tr');
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
+    translations: [
+      { language: 'tr', title: '', description: '' },
+      { language: 'en', title: '', description: '' }
+    ],
     category: "",
     targetAmount: "",
     status: "planning",
@@ -23,25 +26,44 @@ const ProjectCreate = () => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    // Dil-bağımsız alanlar
+    if (name !== 'title' && name !== 'description') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+      return;
+    }
+
+    // Dil-bağımlı alanlar (title, description)
+    setFormData(prev => {
+      const updatedTranslations = prev.translations.map(trans => {
+        if (trans.language === activeTab) {
+          return { ...trans, [name]: value };
+        }
+        return trans;
+      });
+      return { ...prev, translations: updatedTranslations };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title.trim()) {
-      toast.error('Proje başlığı gerekli');
+    // En az bir dilde title olmalı
+    const hasValidTranslation = formData.translations.some(t => t.title.trim());
+    if (!hasValidTranslation) {
+      toast.error('En az bir dilde proje başlığı girmelisiniz');
       return;
     }
+
+    // Boş olmayan çevirileri filtrele
+    const validTranslations = formData.translations.filter(t => t.title.trim());
 
     try {
       setLoading(true);
       await projectService.createProject({
-        title: formData.title,
-        description: formData.description || undefined,
+        translations: validTranslations,
         category: formData.category || undefined,
         targetAmount: formData.targetAmount ? Number(formData.targetAmount) : undefined,
         status: formData.status,
@@ -76,14 +98,60 @@ const ProjectCreate = () => {
               </CardHeader>
               <CardBody>
                 <Form onSubmit={handleSubmit}>
-                  <FormGroup>
-                    <Label for="title">Proje Başlığı *</Label>
-                    <Input type="text" id="title" name="title" value={formData.title} onChange={handleChange} required />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label for="description">Açıklama</Label>
-                    <Input type="textarea" id="description" name="description" rows={4} value={formData.description} onChange={handleChange} />
-                  </FormGroup>
+                  {/* Language Tabs */}
+                  <Nav tabs className="mb-3">
+                    <NavItem>
+                      <NavLink
+                        className={activeTab === 'tr' ? 'active' : ''}
+                        onClick={() => setActiveTab('tr')}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        🇹🇷 Türkçe
+                      </NavLink>
+                    </NavItem>
+                    <NavItem>
+                      <NavLink
+                        className={activeTab === 'en' ? 'active' : ''}
+                        onClick={() => setActiveTab('en')}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        🇬🇧 English
+                      </NavLink>
+                    </NavItem>
+                  </Nav>
+
+                  <TabContent activeTab={activeTab}>
+                    {['tr', 'en'].map(lang => {
+                      const translation = formData.translations.find(t => t.language === lang) || { title: '', description: '' };
+                      return (
+                        <TabPane key={lang} tabId={lang}>
+                          <FormGroup>
+                            <Label for={`title-${lang}`}>Proje Başlığı * ({lang.toUpperCase()})</Label>
+                            <Input
+                              type="text"
+                              id={`title-${lang}`}
+                              name="title"
+                              value={translation.title}
+                              onChange={handleChange}
+                              placeholder={`Proje başlığı (${lang.toUpperCase()})`}
+                            />
+                          </FormGroup>
+                          <FormGroup>
+                            <Label for={`description-${lang}`}>Açıklama ({lang.toUpperCase()})</Label>
+                            <Input
+                              type="textarea"
+                              id={`description-${lang}`}
+                              name="description"
+                              rows={4}
+                              value={translation.description}
+                              onChange={handleChange}
+                              placeholder={`Proje açıklaması (${lang.toUpperCase()})`}
+                            />
+                          </FormGroup>
+                        </TabPane>
+                      );
+                    })}
+                  </TabContent>
                   <Row>
                     <Col md={6}>
                       <FormGroup>

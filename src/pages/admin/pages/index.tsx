@@ -3,7 +3,7 @@
  */
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter, Form } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter, Form, Nav, NavItem, NavLink, TabContent, TabPane } from "reactstrap";
 import { Dashboard } from "utils/Constant";
 import LoadingState from "../../../components/common/LoadingState";
 import EmptyState from "../../../components/common/EmptyState";
@@ -24,15 +24,14 @@ const PagesManagement = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
+  const [activeTab, setActiveTab] = useState('tr');
 
   const [formData, setFormData] = useState({
-    title: '',
-    slug: '',
-    content: '',
-    excerpt: '',
-    metaTitle: '',
-    metaDescription: '',
-    metaKeywords: '',
+    translations: [
+      { language: 'tr', title: '', slug: '', content: '', excerpt: '', metaTitle: '', metaDescription: '', metaKeywords: '' },
+      { language: 'en', title: '', slug: '', content: '', excerpt: '', metaTitle: '', metaDescription: '', metaKeywords: '' },
+      { language: 'ar', title: '', slug: '', content: '', excerpt: '', metaTitle: '', metaDescription: '', metaKeywords: '' }
+    ],
     pageType: 'general' as const,
     status: 'draft' as const,
     isPublic: true,
@@ -69,14 +68,13 @@ const PagesManagement = () => {
     setModal(!modal);
     if (modal) {
       setEditingItem(null);
+      setActiveTab('tr');
       setFormData({
-        title: '',
-        slug: '',
-        content: '',
-        excerpt: '',
-        metaTitle: '',
-        metaDescription: '',
-        metaKeywords: '',
+        translations: [
+          { language: 'tr', title: '', slug: '', content: '', excerpt: '', metaTitle: '', metaDescription: '', metaKeywords: '' },
+          { language: 'en', title: '', slug: '', content: '', excerpt: '', metaTitle: '', metaDescription: '', metaKeywords: '' },
+          { language: 'ar', title: '', slug: '', content: '', excerpt: '', metaTitle: '', metaDescription: '', metaKeywords: '' }
+        ],
         pageType: 'general',
         status: 'draft',
         isPublic: true,
@@ -89,14 +87,53 @@ const PagesManagement = () => {
 
   const handleEdit = (item: Page) => {
     setEditingItem(item);
+
+    // Backend'den gelen translations array'i kullan veya mevcut çeviriden oluştur
+    const existingTranslations = (item as any).translations || [];
+    const languages = ['tr', 'en', 'ar'];
+
+    // Her dil için translation oluştur
+    const translations = languages.map(lang => {
+      const existing = existingTranslations.find((t: any) => t.language === lang);
+      if (existing) {
+        return {
+          language: lang,
+          title: existing.title || '',
+          slug: existing.slug || '',
+          content: existing.content || '',
+          excerpt: existing.excerpt || '',
+          metaTitle: existing.metaTitle || '',
+          metaDescription: existing.metaDescription || '',
+          metaKeywords: existing.metaKeywords || ''
+        };
+      }
+      // Eğer çeviri yoksa, mevcut dil TR ise ondan al, yoksa boş bırak
+      if (lang === 'tr') {
+        return {
+          language: 'tr',
+          title: item.title || '',
+          slug: item.slug || '',
+          content: item.content || '',
+          excerpt: item.excerpt || '',
+          metaTitle: item.metaTitle || '',
+          metaDescription: item.metaDescription || '',
+          metaKeywords: item.metaKeywords || ''
+        };
+      }
+      return {
+        language: lang,
+        title: '',
+        slug: '',
+        content: '',
+        excerpt: '',
+        metaTitle: '',
+        metaDescription: '',
+        metaKeywords: ''
+      };
+    });
+
     setFormData({
-      title: item.title,
-      slug: item.slug,
-      content: item.content || '',
-      excerpt: item.excerpt || '',
-      metaTitle: item.metaTitle || '',
-      metaDescription: item.metaDescription || '',
-      metaKeywords: item.metaKeywords || '',
+      translations,
       pageType: item.pageType,
       status: item.status,
       isPublic: item.isPublic,
@@ -104,6 +141,7 @@ const PagesManagement = () => {
       displayOrder: item.displayOrder,
       featuredImage: item.featuredImage || '',
     });
+    setActiveTab('tr');
     setModal(true);
   };
 
@@ -124,15 +162,31 @@ const PagesManagement = () => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-
-    if (name === 'title' && !editingItem) {
-      const slug = generateSlug(value);
-      setFormData(prev => ({ ...prev, slug }));
+    // Dil-bağımsız alanlar
+    const translationFields = ['title', 'slug', 'content', 'excerpt', 'metaTitle', 'metaDescription', 'metaKeywords'];
+    if (!translationFields.includes(name)) {
+      setFormData((prev: any) => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+      return;
     }
+
+    // Dil-bağımlı alanlar
+    setFormData((prev: any) => {
+      const updatedTranslations = prev.translations.map((trans: any) => {
+        if (trans.language === activeTab) {
+          const updated = { ...trans, [name]: value };
+          // Title değiştiğinde slug'ı otomatik oluştur
+          if (name === 'title' && !editingItem) {
+            updated.slug = generateSlug(value);
+          }
+          return updated;
+        }
+        return trans;
+      });
+      return { ...prev, translations: updatedTranslations };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -140,11 +194,32 @@ const PagesManagement = () => {
     setSaving(true);
 
     try {
+      // En az bir dilde title ve content olmalı
+      const hasValidTranslation = formData.translations.some(
+        (t: any) => t.title.trim() && t.content.trim()
+      );
+
+      if (!hasValidTranslation) {
+        toast.error('En az bir dilde başlık ve içerik girmelisiniz');
+        setSaving(false);
+        return;
+      }
+
+      // Boş olmayan çevirileri filtrele
+      const validTranslations = formData.translations.filter(
+        (t: any) => t.title.trim() && t.content.trim()
+      );
+
+      const submitData = {
+        ...formData,
+        translations: validTranslations
+      };
+
       if (editingItem) {
-        await pageService.updatePage(editingItem.id, formData);
+        await pageService.updatePage(editingItem.id, submitData);
         toast.success('Sayfa güncellendi');
       } else {
-        await pageService.createPage(formData);
+        await pageService.createPage(submitData);
         toast.success('Sayfa oluşturuldu');
       }
       toggleModal();
@@ -442,96 +517,134 @@ const PagesManagement = () => {
         </ModalHeader>
         <Form onSubmit={handleSubmit}>
           <ModalBody>
+            {/* Language Tabs */}
+            <Nav tabs className="mb-3">
+              <NavItem>
+                <NavLink
+                  className={activeTab === 'tr' ? 'active' : ''}
+                  onClick={() => setActiveTab('tr')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  🇹🇷 Türkçe
+                </NavLink>
+              </NavItem>
+              <NavItem>
+                <NavLink
+                  className={activeTab === 'en' ? 'active' : ''}
+                  onClick={() => setActiveTab('en')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  🇬🇧 English
+                </NavLink>
+              </NavItem>
+              <NavItem>
+                <NavLink
+                  className={activeTab === 'ar' ? 'active' : ''}
+                  onClick={() => setActiveTab('ar')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  🇸🇦 العربية
+                </NavLink>
+              </NavItem>
+            </Nav>
+
             <Row>
               <Col md={8}>
-                <FormGroup>
-                  <Label>Başlık *</Label>
-                  <Input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    required
-                    placeholder="Sayfa başlığı"
-                  />
-                </FormGroup>
+                <TabContent activeTab={activeTab}>
+                  {['tr', 'en', 'ar'].map(lang => {
+                    const translation = formData.translations.find((t: any) => t.language === lang) || {};
+                    return (
+                      <TabPane key={lang} tabId={lang}>
+                        <FormGroup>
+                          <Label>Başlık * ({lang.toUpperCase()})</Label>
+                          <Input
+                            type="text"
+                            name="title"
+                            value={translation.title || ''}
+                            onChange={handleChange}
+                            placeholder={`Sayfa başlığı (${lang.toUpperCase()})`}
+                          />
+                        </FormGroup>
 
-                <FormGroup>
-                  <Label>Slug (URL)</Label>
-                  <Input
-                    type="text"
-                    name="slug"
-                    value={formData.slug}
-                    onChange={handleChange}
-                    placeholder="sayfa-url"
-                    disabled
-                  />
-                  <small className="text-muted">Otomatik oluşturulur</small>
-                </FormGroup>
+                        <FormGroup>
+                          <Label>Slug (URL)</Label>
+                          <Input
+                            type="text"
+                            name="slug"
+                            value={translation.slug || ''}
+                            onChange={handleChange}
+                            placeholder="sayfa-url"
+                            disabled
+                          />
+                          <small className="text-muted">Otomatik oluşturulur</small>
+                        </FormGroup>
 
-                <FormGroup>
-                  <Label>Kısa Özet</Label>
-                  <Input
-                    type="textarea"
-                    name="excerpt"
-                    value={formData.excerpt}
-                    onChange={handleChange}
-                    rows={2}
-                    placeholder="Sayfa özeti"
-                  />
-                </FormGroup>
+                        <FormGroup>
+                          <Label>Kısa Özet ({lang.toUpperCase()})</Label>
+                          <Input
+                            type="textarea"
+                            name="excerpt"
+                            value={translation.excerpt || ''}
+                            onChange={handleChange}
+                            rows={2}
+                            placeholder={`Sayfa özeti (${lang.toUpperCase()})`}
+                          />
+                        </FormGroup>
 
-                <FormGroup>
-                  <Label>İçerik *</Label>
-                  <Input
-                    type="textarea"
-                    name="content"
-                    value={formData.content}
-                    onChange={handleChange}
-                    rows={12}
-                    placeholder="Sayfa içeriği (HTML destekler)"
-                    required
-                  />
-                </FormGroup>
+                        <FormGroup>
+                          <Label>İçerik * ({lang.toUpperCase()})</Label>
+                          <Input
+                            type="textarea"
+                            name="content"
+                            value={translation.content || ''}
+                            onChange={handleChange}
+                            rows={12}
+                            placeholder={`Sayfa içeriği (${lang.toUpperCase()})`}
+                          />
+                        </FormGroup>
 
-                <Row>
-                  <Col md={6}>
-                    <FormGroup>
-                      <Label>SEO Başlık</Label>
-                      <Input
-                        type="text"
-                        name="metaTitle"
-                        value={formData.metaTitle}
-                        onChange={handleChange}
-                        placeholder="SEO başlığı"
-                      />
-                    </FormGroup>
-                  </Col>
-                  <Col md={6}>
-                    <FormGroup>
-                      <Label>SEO Anahtar Kelimeler</Label>
-                      <Input
-                        type="text"
-                        name="metaKeywords"
-                        value={formData.metaKeywords}
-                        onChange={handleChange}
-                        placeholder="kelime1, kelime2, kelime3"
-                      />
-                    </FormGroup>
-                  </Col>
-                </Row>
+                        <Row>
+                          <Col md={6}>
+                            <FormGroup>
+                              <Label>SEO Başlık ({lang.toUpperCase()})</Label>
+                              <Input
+                                type="text"
+                                name="metaTitle"
+                                value={translation.metaTitle || ''}
+                                onChange={handleChange}
+                                placeholder={`SEO başlığı (${lang.toUpperCase()})`}
+                              />
+                            </FormGroup>
+                          </Col>
+                          <Col md={6}>
+                            <FormGroup>
+                              <Label>SEO Anahtar Kelimeler ({lang.toUpperCase()})</Label>
+                              <Input
+                                type="text"
+                                name="metaKeywords"
+                                value={translation.metaKeywords || ''}
+                                onChange={handleChange}
+                                placeholder="kelime1, kelime2, kelime3"
+                              />
+                            </FormGroup>
+                          </Col>
+                        </Row>
 
-                <FormGroup>
-                  <Label>SEO Açıklama</Label>
-                  <Input
-                    type="textarea"
-                    name="metaDescription"
-                    value={formData.metaDescription}
-                    onChange={handleChange}
-                    rows={2}
-                    placeholder="SEO açıklaması"
-                  />
-                </FormGroup>
+                        <FormGroup>
+                          <Label>SEO Açıklama ({lang.toUpperCase()})</Label>
+                          <Input
+                            type="textarea"
+                            name="metaDescription"
+                            value={translation.metaDescription || ''}
+                            onChange={handleChange}
+                            rows={2}
+                            placeholder={`SEO açıklaması (${lang.toUpperCase()})`}
+                          />
+                        </FormGroup>
+                      </TabPane>
+                    );
+                  })}
+                </TabContent>
               </Col>
 
               <Col md={4}>

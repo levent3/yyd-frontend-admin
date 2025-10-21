@@ -1,6 +1,6 @@
 import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Form, FormGroup, Label, Input, Button, FormText } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, CardHeader, Form, FormGroup, Label, Input, Button, FormText, Nav, NavItem, NavLink, TabContent, TabPane } from "reactstrap";
 import { Dashboard } from "utils/Constant";
 import donationService from "../../../services/donationService";
 import projectService from "../../../services/projectService";
@@ -9,10 +9,12 @@ import { useRouter } from "next/router";
 
 const CampaignCreate = () => {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState('tr');
   const [formData, setFormData] = useState({
-    title: "",
-    slug: "",
-    description: "",
+    translations: [
+      { language: 'tr', title: '', slug: '', description: '' },
+      { language: 'en', title: '', slug: '', description: '' }
+    ],
     targetAmount: "",
     imageUrl: "",
     category: "",
@@ -44,56 +46,66 @@ const CampaignCreate = () => {
     }
   };
 
+  const generateSlug = (title: string): string => {
+    return title
+      .toLowerCase()
+      .replace(/ğ/g, 'g')
+      .replace(/ü/g, 'u')
+      .replace(/ş/g, 's')
+      .replace(/ı/g, 'i')
+      .replace(/ö/g, 'o')
+      .replace(/ç/g, 'c')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
+    // Dil-bağımsız alanlar
+    if (name !== 'title' && name !== 'slug' && name !== 'description') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+      return;
+    }
 
-  // Başlıktan otomatik slug oluştur
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const title = e.target.value;
-    const slug = title
-      .toLowerCase()
-      .replace(/ş/g, 's')
-      .replace(/ğ/g, 'g')
-      .replace(/ü/g, 'u')
-      .replace(/ı/g, 'i')
-      .replace(/ö/g, 'o')
-      .replace(/ç/g, 'c')
-      .replace(/[^a-z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
-
-    setFormData(prev => ({
-      ...prev,
-      title,
-      slug
-    }));
+    // Dil-bağımlı alanlar (title, slug, description)
+    setFormData(prev => {
+      const updatedTranslations = prev.translations.map(trans => {
+        if (trans.language === activeTab) {
+          const updated = { ...trans, [name]: value };
+          // Title değiştiğinde slug'ı otomatik oluştur
+          if (name === 'title') {
+            updated.slug = generateSlug(value);
+          }
+          return updated;
+        }
+        return trans;
+      });
+      return { ...prev, translations: updatedTranslations };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title.trim()) {
-      toast.error('Kampanya başlığı gerekli');
+    // En az bir dilde title ve slug olmalı
+    const hasValidTranslation = formData.translations.some(t => t.title.trim() && t.slug.trim());
+    if (!hasValidTranslation) {
+      toast.error('En az bir dilde kampanya başlığı girmelisiniz');
       return;
     }
-    if (!formData.slug.trim()) {
-      toast.error('Kampanya slug gerekli');
-      return;
-    }
+
+    // Boş olmayan çevirileri filtrele
+    const validTranslations = formData.translations.filter(t => t.title.trim() && t.slug.trim());
 
     try {
       setLoading(true);
       await donationService.createCampaign({
-        title: formData.title,
-        slug: formData.slug,
-        description: formData.description || undefined,
+        translations: validTranslations,
         targetAmount: formData.targetAmount ? Number(formData.targetAmount) : undefined,
         imageUrl: formData.imageUrl || undefined,
         category: formData.category || undefined,
@@ -146,45 +158,75 @@ const CampaignCreate = () => {
               </CardHeader>
               <CardBody>
                 <Form onSubmit={handleSubmit}>
-                  <FormGroup>
-                    <Label for="title">Kampanya Başlığı *</Label>
-                    <Input
-                      type="text"
-                      id="title"
-                      name="title"
-                      placeholder="Örn: Gazze İnsani Yardım"
-                      value={formData.title}
-                      onChange={handleTitleChange}
-                      required
-                    />
-                    <FormText color="muted">Slug otomatik olarak oluşturulacak</FormText>
-                  </FormGroup>
+                  {/* Language Tabs */}
+                  <Nav tabs className="mb-3">
+                    <NavItem>
+                      <NavLink
+                        className={activeTab === 'tr' ? 'active' : ''}
+                        onClick={() => setActiveTab('tr')}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        🇹🇷 Türkçe
+                      </NavLink>
+                    </NavItem>
+                    <NavItem>
+                      <NavLink
+                        className={activeTab === 'en' ? 'active' : ''}
+                        onClick={() => setActiveTab('en')}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        🇬🇧 English
+                      </NavLink>
+                    </NavItem>
+                  </Nav>
 
-                  <FormGroup>
-                    <Label for="slug">Slug *</Label>
-                    <Input
-                      type="text"
-                      id="slug"
-                      name="slug"
-                      placeholder="gazze-insani-yardim"
-                      value={formData.slug}
-                      onChange={handleChange}
-                      required
-                    />
-                  </FormGroup>
+                  <TabContent activeTab={activeTab}>
+                    {['tr', 'en'].map(lang => {
+                      const translation = formData.translations.find(t => t.language === lang) || { title: '', slug: '', description: '' };
+                      return (
+                        <TabPane key={lang} tabId={lang}>
+                          <FormGroup>
+                            <Label for={`title-${lang}`}>Kampanya Başlığı * ({lang.toUpperCase()})</Label>
+                            <Input
+                              type="text"
+                              id={`title-${lang}`}
+                              name="title"
+                              placeholder={`Örn: Gazze İnsani Yardım (${lang.toUpperCase()})`}
+                              value={translation.title}
+                              onChange={handleChange}
+                            />
+                            <FormText color="muted">Slug otomatik olarak oluşturulacak</FormText>
+                          </FormGroup>
 
-                  <FormGroup>
-                    <Label for="description">Açıklama</Label>
-                    <Input
-                      type="textarea"
-                      id="description"
-                      name="description"
-                      rows={5}
-                      placeholder="Kampanya detayları..."
-                      value={formData.description}
-                      onChange={handleChange}
-                    />
-                  </FormGroup>
+                          <FormGroup>
+                            <Label for={`slug-${lang}`}>Slug *</Label>
+                            <Input
+                              type="text"
+                              id={`slug-${lang}`}
+                              name="slug"
+                              placeholder="gazze-insani-yardim"
+                              value={translation.slug}
+                              onChange={handleChange}
+                              disabled
+                            />
+                          </FormGroup>
+
+                          <FormGroup>
+                            <Label for={`description-${lang}`}>Açıklama ({lang.toUpperCase()})</Label>
+                            <Input
+                              type="textarea"
+                              id={`description-${lang}`}
+                              name="description"
+                              rows={5}
+                              placeholder={`Kampanya detayları... (${lang.toUpperCase()})`}
+                              value={translation.description}
+                              onChange={handleChange}
+                            />
+                          </FormGroup>
+                        </TabPane>
+                      );
+                    })}
+                  </TabContent>
 
                   <Row>
                     <Col md={6}>

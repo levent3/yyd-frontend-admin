@@ -18,6 +18,7 @@ import { formatCurrency } from "utils/formatters";
 import LoadingState from "../../../components/common/LoadingState";
 import EmptyState from "../../../components/common/EmptyState";
 import useConfirm from "../../../hooks/useConfirm";
+import withPermission from "../../../../helper/WithPermission";
 import donationService, { DonationCampaign } from "../../../services/donationService";
 import { toast } from "react-toastify";
 import { useRouter } from "next/router";
@@ -206,4 +207,7 @@ const CampaignsPage = () => {
   );
 };
 
-export default CampaignsPage;
+export default withPermission(CampaignsPage, {
+  moduleKey: 'campaigns',
+  action: 'read'
+});

@@ -18,6 +18,7 @@ import { formatCurrency, formatDate } from "utils/formatters";
 import LoadingState from "../../../components/common/LoadingState";
 import EmptyState from "../../../components/common/EmptyState";
 import useConfirm from "../../../hooks/useConfirm";
+import withPermission from "../../../../helper/WithPermission";
 import donationService, { Donation } from "../../../services/donationService";
 import { useRouter } from "next/router";
 import { Eye, Check, X } from "react-feather";
@@ -244,4 +245,7 @@ const DonationsPage = () => {
   );
 };
 
-export default DonationsPage;
+export default withPermission(DonationsPage, {
+  moduleKey: 'donations',
+  action: 'read'
+});

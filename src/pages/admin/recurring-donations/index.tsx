@@ -2,6 +2,7 @@ import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import withPermission from "../../../../helper/WithPermission";
 import recurringDonationService, { RecurringDonation } from "../../../services/recurringDonationService";
 import { toast } from "react-toastify";
 import { Eye, Trash2, Play, Pause, XCircle } from "react-feather";
@@ -446,4 +447,7 @@ const RecurringDonationsPage = () => {
   );
 };
 
-export default RecurringDonationsPage;
+export default withPermission(RecurringDonationsPage, {
+  moduleKey: 'recurring-donations',
+  action: 'read'
+});

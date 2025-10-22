@@ -18,6 +18,7 @@ import {
   Label, Input, FormFeedback, Nav, NavItem, NavLink, TabContent, TabPane
 } from "reactstrap";
 import LoadingState from "../../../components/common/LoadingState";
+import withPermission from "../../../../helper/WithPermission";
 import EmptyState from "../../../components/common/EmptyState";
 import useConfirm from "../../../hooks/useConfirm";
 import projectService, { Project, CreateProjectData } from "../../../services/projectService";
@@ -685,4 +686,7 @@ const ProjectsPage = () => {
   );
 };
 
-export default ProjectsPage;
+export default withPermission(ProjectsPage, {
+  moduleKey: 'projects',
+  action: 'read'
+});

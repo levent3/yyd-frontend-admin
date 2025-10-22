@@ -19,6 +19,7 @@ import { formatDate } from "utils/formatters";
 import LoadingState from "../../../components/common/LoadingState";
 import EmptyState from "../../../components/common/EmptyState";
 import useConfirm from "../../../hooks/useConfirm";
+import withPermission from "../../../../helper/WithPermission";
 import volunteerService, { Volunteer } from '../../../services/volunteerService';
 
 const VolunteerApplications = () => {
@@ -311,4 +312,7 @@ const VolunteerApplications = () => {
   );
 };
 
-export default VolunteerApplications;
+export default withPermission(VolunteerApplications, {
+  moduleKey: 'volunteers',
+  action: 'read'
+});

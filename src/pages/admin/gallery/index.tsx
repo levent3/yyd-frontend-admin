@@ -9,6 +9,7 @@ import { formatDate } from "utils/formatters";
 import LoadingState from "../../../components/common/LoadingState";
 import EmptyState from "../../../components/common/EmptyState";
 import useConfirm from "../../../hooks/useConfirm";
+import withPermission from "../../../../helper/WithPermission";
 import galleryService, { GalleryItem, CreateGalleryItemData, UpdateGalleryItemData } from "../../../services/galleryService";
 import uploadService from "../../../services/uploadService";
 import { toast } from "react-toastify";
@@ -438,4 +439,7 @@ const GalleryPage = () => {
   );
 };
 
-export default GalleryPage;
+export default withPermission(GalleryPage, {
+  moduleKey: 'gallery',
+  action: 'read'
+});

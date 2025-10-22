@@ -2,6 +2,7 @@ import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import withPermission from "../../../../helper/WithPermission";
 import paymentTransactionService, { PaymentTransaction, PaymentStatistics } from "../../../services/paymentTransactionService";
 import { toast } from "react-toastify";
 import { Eye, RefreshCw, DollarSign, CheckCircle, XCircle, Clock } from "react-feather";
@@ -442,4 +443,7 @@ const PaymentTransactionsPage = () => {
   );
 };
 
-export default PaymentTransactionsPage;
+export default withPermission(PaymentTransactionsPage, {
+  moduleKey: 'payment-transactions',
+  action: 'read'
+});

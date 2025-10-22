@@ -2,6 +2,7 @@ import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Spinner, Input, FormGroup, Label, Modal, ModalHeader, ModalBody, ModalFooter, Nav, NavItem, NavLink, TabContent, TabPane } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import withPermission from "../../../../helper/WithPermission";
 import systemSettingsService, { SystemSetting } from "../../../services/systemSettingsService";
 import { toast } from "react-toastify";
 import { Edit, Trash2, Plus, Save, X } from "react-feather";
@@ -405,4 +406,7 @@ const SystemSettingsPage = () => {
   );
 };
 
-export default SystemSettingsPage;
+export default withPermission(SystemSettingsPage, {
+  moduleKey: 'system-settings',
+  action: 'read'
+});

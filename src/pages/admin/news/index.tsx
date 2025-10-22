@@ -19,6 +19,7 @@ import { formatDate } from "utils/formatters";
 import LoadingState from "../../../components/common/LoadingState";
 import EmptyState from "../../../components/common/EmptyState";
 import useConfirm from "../../../hooks/useConfirm";
+import withPermission from "../../../../helper/WithPermission";
 import newsService, { News, CreateNewsData, UpdateNewsData } from "../../../services/newsService";
 import uploadService from "../../../services/uploadService";
 import { toast } from "react-toastify";
@@ -597,4 +598,7 @@ const NewsPage = () => {
   );
 };
 
-export default NewsPage;
+export default withPermission(NewsPage, {
+  moduleKey: 'news',
+  action: 'read'
+});

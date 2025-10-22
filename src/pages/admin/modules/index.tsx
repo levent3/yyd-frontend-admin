@@ -8,6 +8,7 @@ import { Dashboard } from "utils/Constant";
 import LoadingState from "../../../components/common/LoadingState";
 import EmptyState from "../../../components/common/EmptyState";
 import useConfirm from "../../../hooks/useConfirm";
+import withPermission from "../../../../helper/WithPermission";
 import moduleService, { Module } from "../../../services/moduleService";
 import { useRouter } from "next/router";
 import { Edit, Trash2, Plus } from "react-feather";
@@ -214,4 +215,7 @@ const ModulesPage = () => {
   );
 };
 
-export default ModulesPage;
+export default withPermission(ModulesPage, {
+  moduleKey: 'modules',
+  action: 'read'
+});

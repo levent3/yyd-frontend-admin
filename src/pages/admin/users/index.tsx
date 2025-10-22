@@ -12,6 +12,7 @@ import roleService, { Role } from "../../../services/roleService";
 import { useAuth } from "../../../context/AuthContext";
 import { PaginationInfo } from '../../../types/pagination';
 import Pagination from '../../../components/common/Pagination';
+import withPermission from "../../../../helper/WithPermission";
 
 const UsersPage = () => {
   const { user: currentUser } = useAuth();
@@ -399,4 +400,11 @@ const UsersPage = () => {
   );
 };
 
-export default UsersPage;
+// Sayfa seviyesi permission kontrolü
+// Kullanıcının 'users' modülüne 'read' yetkisi yoksa:
+// - Toast gösterir
+// - Dashboard'a yönlendirir
+export default withPermission(UsersPage, {
+  moduleKey: 'users',
+  action: 'read'
+});

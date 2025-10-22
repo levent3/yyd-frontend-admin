@@ -19,6 +19,7 @@ import { formatDate } from "utils/formatters";
 import LoadingState from "../../../components/common/LoadingState";
 import EmptyState from "../../../components/common/EmptyState";
 import useConfirm from "../../../hooks/useConfirm";
+import withPermission from "../../../../helper/WithPermission";
 import contactService, { ContactMessage } from "../../../services/contactService";
 import { Eye, Trash2, CheckCircle } from "react-feather";
 import { PaginationInfo } from '../../../types/pagination';
@@ -301,4 +302,7 @@ const ContactPage = () => {
   );
 };
 
-export default ContactPage;
+export default withPermission(ContactPage, {
+  moduleKey: 'contact',
+  action: 'read'
+});

@@ -8,6 +8,7 @@ import { Dashboard } from "utils/Constant";
 import LoadingState from "../../../components/common/LoadingState";
 import EmptyState from "../../../components/common/EmptyState";
 import useConfirm from "../../../hooks/useConfirm";
+import withPermission from "../../../../helper/WithPermission";
 import pageService, { Page } from "../../../services/pageService";
 import uploadService from "../../../services/uploadService";
 import { toast } from "react-toastify";
@@ -791,4 +792,7 @@ const PagesManagement = () => {
   );
 };
 
-export default PagesManagement;
+export default withPermission(PagesManagement, {
+  moduleKey: 'pages',
+  action: 'read'
+});

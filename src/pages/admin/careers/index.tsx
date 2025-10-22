@@ -9,6 +9,7 @@ import { formatDate } from "utils/formatters";
 import LoadingState from "../../../components/common/LoadingState";
 import EmptyState from "../../../components/common/EmptyState";
 import useConfirm from "../../../hooks/useConfirm";
+import withPermission from "../../../../helper/WithPermission";
 import careerService, { CareerApplication } from "../../../services/careerService";
 import { Eye, Trash2, Download, CheckCircle, XCircle } from "react-feather";
 import { PaginationInfo } from '../../../types/pagination';
@@ -335,4 +336,7 @@ const CareersPage = () => {
   );
 };
 
-export default CareersPage;
+export default withPermission(CareersPage, {
+  moduleKey: 'careers',
+  action: 'read'
+});

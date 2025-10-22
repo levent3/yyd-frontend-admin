@@ -2,6 +2,7 @@ import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card, CardBody, CardHeader, Button, Spinner, Input, FormGroup, Label, Alert } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import withPermission from "../../../../helper/WithPermission";
 import campaignSettingsService, { CreateCampaignSettingsData } from "../../../services/campaignSettingsService";
 import donationService, { DonationCampaign } from "../../../services/donationService";
 import { toast } from "react-toastify";
@@ -496,4 +497,7 @@ const CampaignSettingsPage = () => {
   );
 };
 
-export default CampaignSettingsPage;
+export default withPermission(CampaignSettingsPage, {
+  moduleKey: 'campaign-settings',
+  action: 'read'
+});

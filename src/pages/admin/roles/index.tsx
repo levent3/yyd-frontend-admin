@@ -7,6 +7,7 @@ import { Container, Row, Col, Card, CardBody, Table, Button, Badge } from "react
 import LoadingState from "../../../components/common/LoadingState";
 import EmptyState from "../../../components/common/EmptyState";
 import useConfirm from "../../../hooks/useConfirm";
+import withPermission from "../../../../helper/WithPermission";
 import roleService, { Role } from "../../../services/roleService";
 
 const RolesPage = () => {
@@ -130,4 +131,7 @@ const RolesPage = () => {
   );
 };
 
-export default RolesPage;
+export default withPermission(RolesPage, {
+  moduleKey: 'roles',
+  action: 'read'
+});

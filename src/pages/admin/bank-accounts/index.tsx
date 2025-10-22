@@ -5,6 +5,7 @@ import Breadcrumbs from "CommonElements/Breadcrumbs";
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card, CardBody, CardHeader, Table, Button, Badge, Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup, Label, Input } from "reactstrap";
 import { Dashboard } from "utils/Constant";
+import withPermission from "../../../../helper/WithPermission";
 import LoadingState from "../../../components/common/LoadingState";
 import EmptyState from "../../../components/common/EmptyState";
 import useConfirm from "../../../hooks/useConfirm";
@@ -397,4 +398,7 @@ const BankAccountsPage = () => {
   );
 };
 
-export default BankAccountsPage;
+export default withPermission(BankAccountsPage, {
+  moduleKey: 'bank-accounts',
+  action: 'read'
+});

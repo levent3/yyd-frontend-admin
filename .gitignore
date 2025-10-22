@@ -5,11 +5,12 @@
 /.pnp
 .pnp.js
 
-# Environment variables - ÖNEMLI: Bu dosya asla GitHub'a yüklenmemeli!
+# Environment variables - ÖNEMLI: Bu dosyalar asla GitHub'a yüklenmemeli!
 .env
 .env.local
 .env.development.local
 .env.test.local
+.env.production
 .env.production.local
 
 # Testing

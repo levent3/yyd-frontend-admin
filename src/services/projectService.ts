@@ -4,12 +4,20 @@ import { PaginatedResponse, PaginationParams, DEFAULT_PAGE, DEFAULT_LIMIT } from
 
 export interface Project {
   id: number;
+  // YENİ: Çok dilli yapı - Backend'den gelen response
+  translations?: ProjectTranslation[];
+
+  // Mapped fields (backend'de formatlanmış hali)
   title: string;
   slug: string;
   description?: string;
   content?: string;
+
+  // Görsel alanları
   coverImage?: string | null;
-  imageUrl?: string | null; // YENİ - Yedek görsel alanı
+  imageUrl?: string | null;
+
+  // Diğer alanlar
   category?: string | null;
   location?: string | null;
   country?: string | null;
@@ -28,12 +36,28 @@ export interface Project {
   updatedAt: string;
 }
 
-export interface CreateProjectData {
+export interface ProjectTranslation {
+  language: string;
   title: string;
+  slug?: string;
   description?: string;
   content?: string;
+}
+
+export interface CreateProjectData {
+  // YENİ: Çok dilli yapı
+  translations: ProjectTranslation[];
+
+  // Eski alanlar (geriye dönük uyumluluk için opsiyonel)
+  title?: string;
+  description?: string;
+  content?: string;
+
+  // Görsel alanları
   coverImage?: string;
-  imageUrl?: string; // YENİ - Yedek görsel alanı
+  imageUrl?: string;
+
+  // Diğer alanlar
   category?: string;
   location?: string;
   country?: string;

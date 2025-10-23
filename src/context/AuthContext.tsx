@@ -51,7 +51,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userData = await authService.getMe();
       setUser(userData);
       toast.success('Giriş başarılı!');
-      router.push('/dashboard');
+      // Hard redirect - production'da router.push sorun çıkarabiliyor
+      window.location.href = '/dashboard';
     } catch (error: any) {
       const message = error.response?.data?.message || 'Giriş başarısız!';
       toast.error(message);

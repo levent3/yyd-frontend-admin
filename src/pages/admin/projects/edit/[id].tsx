@@ -1,13 +1,14 @@
 import Breadcrumbs from "CommonElements/Breadcrumbs";
-import React, { useState } from "react";
-import { Container, Row, Col, Card, CardBody, CardHeader, Form, FormGroup, Label, Input, Button, Nav, NavItem, NavLink, TabContent, TabPane } from "reactstrap";
+import React, { useState, useEffect } from "react";
+import { Container, Row, Col, Card, CardBody, CardHeader, Form, FormGroup, Label, Input, Button, Nav, NavItem, NavLink, TabContent, TabPane, Spinner } from "reactstrap";
 import { Dashboard } from "utils/Constant";
-import projectService from "../../../services/projectService";
+import projectService from "../../../../services/projectService";
 import { toast } from "react-toastify";
 import { useRouter } from "next/router";
 
-const ProjectCreate = () => {
+const ProjectEdit = () => {
   const router = useRouter();
+  const { id } = router.query;
   const [activeTab, setActiveTab] = useState('tr');
   const [formData, setFormData] = useState({
     translations: [
@@ -31,8 +32,63 @@ const ProjectCreate = () => {
     displayOrder: 0
   });
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+
+  useEffect(() => {
+    if (id) {
+      fetchProject();
+    }
+  }, [id]);
+
+  const fetchProject = async () => {
+    try {
+      setLoadingData(true);
+      const project = await projectService.getProjectById(Number(id));
+
+      // Backend'den gelen translations varsa kullan, yoksa mapped fields kullan
+      const translations = project.translations || [
+        { language: 'tr', title: project.title || '', description: project.description || '', content: project.content || '' },
+        { language: 'en', title: '', description: '', content: '' },
+        { language: 'ar', title: '', description: '', content: '' }
+      ];
+
+      // Tüm diller için translation olduğundan emin ol
+      const ensureAllLanguages = (trans: any[]) => {
+        const languages = ['tr', 'en', 'ar'];
+        return languages.map(lang => {
+          const existing = trans.find(t => t.language === lang);
+          return existing || { language: lang, title: '', description: '', content: '' };
+        });
+      };
+
+      setFormData({
+        translations: ensureAllLanguages(translations),
+        category: project.category || "",
+        location: project.location || "",
+        country: project.country || "",
+        coverImage: project.coverImage || "",
+        targetAmount: project.targetAmount?.toString() || "",
+        budget: project.budget?.toString() || "",
+        beneficiaryCount: project.beneficiaryCount?.toString() || "",
+        startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "",
+        endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "",
+        status: project.status || "planning",
+        priority: project.priority || "medium",
+        isActive: project.isActive ?? true,
+        isFeatured: project.isFeatured ?? false,
+        displayOrder: project.displayOrder || 0
+      });
+      setImagePreview(project.coverImage || '');
+    } catch (error: any) {
+      console.error('Proje yüklenirken hata:', error);
+      toast.error('Proje yüklenirken hata oluştu');
+      router.push('/admin/projects');
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -99,7 +155,7 @@ const ProjectCreate = () => {
         coverImageUrl = uploadResult.imageUrl;
       }
 
-      await projectService.createProject({
+      await projectService.updateProject(Number(id), {
         translations: validTranslations,
         category: formData.category || undefined,
         location: formData.location || undefined,
@@ -117,26 +173,39 @@ const ProjectCreate = () => {
         displayOrder: Number(formData.displayOrder)
       });
 
-      toast.success('Proje başarıyla oluşturuldu');
+      toast.success('Proje başarıyla güncellendi');
       router.push('/admin/projects');
     } catch (error: any) {
-      console.error('Proje oluşturulurken hata:', error);
-      toast.error(error.response?.data?.message || 'Proje oluşturulurken hata oluştu');
+      console.error('Proje güncellenirken hata:', error);
+      toast.error(error.response?.data?.message || 'Proje güncellenirken hata oluştu');
     } finally {
       setLoading(false);
     }
   };
 
+  if (loadingData) {
+    return (
+      <div className="page-body">
+        <Container fluid={true}>
+          <div className="text-center py-5">
+            <Spinner color="primary" />
+            <p className="mt-2">Proje yükleniyor...</p>
+          </div>
+        </Container>
+      </div>
+    );
+  }
+
   return (
     <div className="page-body">
-      <Breadcrumbs title="Yeni Proje Ekle" mainTitle="Proje Ekle" parent={Dashboard} />
+      <Breadcrumbs title="Proje Düzenle" mainTitle="Proje Düzenle" parent={Dashboard} />
       <Container fluid={true}>
         <Row>
           <Col sm={12} lg={8} className="mx-auto">
             <Card>
               <CardHeader>
                 <div className="d-flex justify-content-between align-items-center">
-                  <h5 className="mb-0">Yeni Proje Oluştur</h5>
+                  <h5 className="mb-0">Proje Düzenle</h5>
                   <Button color="secondary" size="sm" onClick={() => router.push('/admin/projects')}>
                     ← Geri Dön
                   </Button>
@@ -350,7 +419,7 @@ const ProjectCreate = () => {
                   <div className="d-flex justify-content-end gap-2 mt-4">
                     <Button color="secondary" onClick={() => router.push('/admin/projects')} disabled={loading}>İptal</Button>
                     <Button color="primary" type="submit" disabled={loading}>
-                      {loading ? 'Oluşturuluyor...' : 'Proje Oluştur'}
+                      {loading ? 'Güncelleniyor...' : 'Proje Güncelle'}
                     </Button>
                   </div>
                 </Form>
@@ -363,4 +432,4 @@ const ProjectCreate = () => {
   );
 };
 
-export default ProjectCreate;
+export default ProjectEdit;

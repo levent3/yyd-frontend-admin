@@ -13,7 +13,8 @@ const CampaignCreate = () => {
   const [formData, setFormData] = useState({
     translations: [
       { language: 'tr', title: '', slug: '', description: '' },
-      { language: 'en', title: '', slug: '', description: '' }
+      { language: 'en', title: '', slug: '', description: '' },
+      { language: 'ar', title: '', slug: '', description: '' }
     ],
     targetAmount: "",
     imageUrl: "",
@@ -100,7 +101,9 @@ const CampaignCreate = () => {
     }
 
     // Boş olmayan çevirileri filtrele
-    const validTranslations = formData.translations.filter(t => t.title.trim() && t.slug.trim());
+    const validTranslations = formData.translations.filter(t =>
+      t.title.trim() || t.slug.trim() || t.description.trim()
+    );
 
     try {
       setLoading(true);
@@ -178,10 +181,19 @@ const CampaignCreate = () => {
                         🇬🇧 English
                       </NavLink>
                     </NavItem>
+                    <NavItem>
+                      <NavLink
+                        className={activeTab === 'ar' ? 'active' : ''}
+                        onClick={() => setActiveTab('ar')}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        🇸🇦 العربية
+                      </NavLink>
+                    </NavItem>
                   </Nav>
 
                   <TabContent activeTab={activeTab}>
-                    {['tr', 'en'].map(lang => {
+                    {['tr', 'en', 'ar'].map(lang => {
                       const translation = formData.translations.find(t => t.language === lang) || { title: '', slug: '', description: '' };
                       return (
                         <TabPane key={lang} tabId={lang}>

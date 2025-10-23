@@ -48,9 +48,15 @@ export interface Donation {
 
 export interface DonationCampaign {
   id: number;
+  // YENİ: Çok dilli yapı - Backend'den gelen response
+  translations?: CampaignTranslation[];
+
+  // Mapped fields (backend'de formatlanmış hali)
   title: string;
   slug: string;
   description?: string;
+
+  // Diğer alanlar
   targetAmount?: number;
   collectedAmount?: number;
   imageUrl?: string;
@@ -165,10 +171,23 @@ export interface CreateDonationData {
   repeatCount?: number;
 }
 
-export interface CreateCampaignData {
+export interface CampaignTranslation {
+  language: string;
   title: string;
-  slug: string;
+  slug?: string;
   description?: string;
+}
+
+export interface CreateCampaignData {
+  // YENİ: Çok dilli yapı
+  translations: CampaignTranslation[];
+
+  // Eski alanlar (geriye dönük uyumluluk için opsiyonel)
+  title?: string;
+  slug?: string;
+  description?: string;
+
+  // Diğer alanlar
   targetAmount?: number;
   imageUrl?: string;
   category?: string;
@@ -316,9 +335,9 @@ class DonationService {
 
   // ========== BANK ACCOUNTS ==========
 
-  // Public: Tüm banka hesaplarını getir - Cache'lenmiş (1 saat)
+  // Admin: Tüm banka hesaplarını getir
   async getAllBankAccounts(): Promise<BankAccount[]> {
-    const response = await api.get<any>(`/donations/bank-accounts/public`);
+    const response = await api.get<any>(`/donations/bank-accounts`);
     // Backend cache'li response'u handle et: { success, data }
     return response.data.data || response.data;
   }

@@ -17,6 +17,7 @@ import {
   Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup,
   Label, Input, FormFeedback, Nav, NavItem, NavLink, TabContent, TabPane
 } from "reactstrap";
+import Link from "next/link";
 import LoadingState from "../../../components/common/LoadingState";
 import withPermission from "../../../../helper/WithPermission";
 import EmptyState from "../../../components/common/EmptyState";
@@ -283,9 +284,11 @@ const ProjectsPage = () => {
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h5>Projeler</h5>
                   {canCreate && (
-                    <Button color="primary" size="sm" onClick={openCreateModal}>
-                      + Yeni Proje
-                    </Button>
+                    <Link href="/admin/projects/create">
+                      <Button color="primary" size="sm">
+                        + Yeni Proje
+                      </Button>
+                    </Link>
                   )}
                 </div>
 
@@ -293,7 +296,7 @@ const ProjectsPage = () => {
                   <EmptyState
                     message="Henüz proje bulunmamaktadır"
                     actionLabel={canCreate ? "Yeni Proje Ekle" : undefined}
-                    onAction={canCreate ? openCreateModal : undefined}
+                    onAction={canCreate ? () => window.location.href = '/admin/projects/create' : undefined}
                   />
                 ) : (
                   <div className="table-responsive">
@@ -367,15 +370,16 @@ const ProjectsPage = () => {
                             </td>
                             <td>
                               {canUpdate && (
-                                <Button
-                                  color="warning"
-                                  size="sm"
-                                  className="me-2"
-                                  outline
-                                  onClick={() => openEditModal(project)}
-                                >
-                                  Düzenle
-                                </Button>
+                                <Link href={`/admin/projects/edit/${project.id}`}>
+                                  <Button
+                                    color="warning"
+                                    size="sm"
+                                    className="me-2"
+                                    outline
+                                  >
+                                    Düzenle
+                                  </Button>
+                                </Link>
                               )}
                               {canDelete && (
                                 <Button

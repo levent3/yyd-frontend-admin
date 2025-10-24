@@ -120,8 +120,8 @@ class TeamMemberService {
     const formData = new FormData();
     formData.append('image', file);
 
-    const response = await api.post<{ imageUrl: string; message: string }>(
-      '/upload',
+    const response = await api.post<{ fileUrl: string; thumbnailUrl?: string; message: string }>(
+      '/upload/image',
       formData,
       {
         headers: {
@@ -130,7 +130,7 @@ class TeamMemberService {
       }
     );
 
-    return { imageUrl: response.data.imageUrl };
+    return { imageUrl: response.data.fileUrl };
   }
 }
 

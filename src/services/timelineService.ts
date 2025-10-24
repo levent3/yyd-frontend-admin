@@ -16,14 +16,12 @@ export interface Timeline {
   // Mapped fields (formatted by backend)
   title?: string;
   description?: string;
-  content?: string;
 }
 
 export interface TimelineTranslation {
   language: string;
   title: string;
   description?: string;
-  content?: string;
 }
 
 export interface CreateTimelineData {

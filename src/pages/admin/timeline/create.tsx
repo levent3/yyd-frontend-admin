@@ -14,9 +14,9 @@ const TimelineCreate = () => {
     displayOrder: 0,
     isActive: true,
     translations: [
-      { language: 'tr', title: '', description: '', content: '' },
-      { language: 'en', title: '', description: '', content: '' },
-      { language: 'ar', title: '', description: '', content: '' }
+      { language: 'tr', title: '', description: '' },
+      { language: 'en', title: '', description: '' },
+      { language: 'ar', title: '', description: '' }
     ]
   });
   const [loading, setLoading] = useState(false);
@@ -26,7 +26,7 @@ const TimelineCreate = () => {
     const checked = (e.target as HTMLInputElement).checked;
 
     // Language-independent fields
-    if (name !== 'title' && name !== 'description' && name !== 'content') {
+    if (name !== 'title' && name !== 'description') {
       setFormData(prev => ({
         ...prev,
         [name]: type === 'checkbox' ? checked : value
@@ -58,7 +58,7 @@ const TimelineCreate = () => {
 
     // Filter non-empty translations
     const validTranslations = formData.translations.filter(t =>
-      t.title.trim() || t.description.trim() || t.content.trim()
+      t.title.trim() || t.description.trim()
     );
 
     try {
@@ -177,7 +177,7 @@ const TimelineCreate = () => {
 
                   <TabContent activeTab={activeTab}>
                     {['tr', 'en', 'ar'].map(lang => {
-                      const translation = formData.translations.find(t => t.language === lang) || { title: '', description: '', content: '' };
+                      const translation = formData.translations.find(t => t.language === lang) || { title: '', description: '' };
                       return (
                         <TabPane key={lang} tabId={lang}>
                           <FormGroup>
@@ -192,27 +192,15 @@ const TimelineCreate = () => {
                             />
                           </FormGroup>
                           <FormGroup>
-                            <Label for={`description-${lang}`}>Kısa Açıklama ({lang.toUpperCase()})</Label>
+                            <Label for={`description-${lang}`}>Açıklama ({lang.toUpperCase()})</Label>
                             <Input
                               type="textarea"
                               id={`description-${lang}`}
                               name="description"
-                              rows={3}
+                              rows={5}
                               value={translation.description}
                               onChange={handleChange}
-                              placeholder={`Kısa açıklama (${lang.toUpperCase()})`}
-                            />
-                          </FormGroup>
-                          <FormGroup>
-                            <Label for={`content-${lang}`}>Detaylı İçerik ({lang.toUpperCase()})</Label>
-                            <Input
-                              type="textarea"
-                              id={`content-${lang}`}
-                              name="content"
-                              rows={5}
-                              value={translation.content}
-                              onChange={handleChange}
-                              placeholder={`Detaylı içerik (${lang.toUpperCase()})`}
+                              placeholder={`Açıklama (${lang.toUpperCase()})`}
                             />
                           </FormGroup>
                         </TabPane>

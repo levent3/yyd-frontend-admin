@@ -115,25 +115,43 @@ export const useDynamicMenu = () => {
       const parentModules = allowedModules.filter(m => !m.parentId);
       const childModules = allowedModules.filter(m => m.parentId);
 
-      // Dashboard her zaman ilk sırada
-      const dashboardSection: MenuSection = {
-        title: 'Ana Menü',
-        menucontent: 'Dashboard',
-        Items: [
-          {
-            title: 'Dashboard',
-            id: 0,
-            icon: 'home',
-            path: '/dashboard',
-            type: 'link',
-          }
-        ]
+      // Modülleri kategorilere göre ayır
+      const categoryMap: { [key: string]: string } = {
+        'dashboard': 'dashboard',
+        'projects': 'content',
+        'news': 'content',
+        'gallery': 'content',
+        'timeline': 'content',
+        'team-members': 'content',
+        'campaigns': 'donation',
+        'campaign-settings': 'donation',
+        'donations': 'donation',
+        'donations-list': 'donation',
+        'recurring-donations': 'donation',
+        'payment-transactions': 'donation',
+        'bank-accounts': 'donation',
+        'contact': 'application',
+        'volunteers': 'application',
+        'careers': 'application',
+        'users': 'system',
+        'roles': 'system',
+        'modules': 'system',
+        'settings': 'system',
+        'system-settings': 'system',
       };
 
-      // Diğer modülleri dönüştür
-      const menuItems: MenuItem[] = parentModules
+      // Modülleri kategorize et
+      const categorizedModules: { [key: string]: MenuItem[] } = {
+        dashboard: [],
+        content: [],
+        donation: [],
+        application: [],
+        system: [],
+      };
+
+      parentModules
         .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
-        .map((parent, index) => {
+        .forEach((parent, index) => {
           const children = childModules
             .filter(child => child.parentId === parent.id)
             .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
@@ -147,7 +165,7 @@ export const useDynamicMenu = () => {
 
           const hasChildren = children.length > 0;
 
-          return {
+          const menuItem: MenuItem = {
             title: parent.name,
             id: index + 1,
             icon: getIconForModule(parent.moduleKey),
@@ -157,15 +175,63 @@ export const useDynamicMenu = () => {
             moduleKey: parent.moduleKey,
             children: hasChildren ? children : undefined,
           };
+
+          // Modülü uygun kategoriye ekle
+          const category = categoryMap[parent.moduleKey] || 'system';
+          categorizedModules[category].push(menuItem);
         });
 
-      const managementSection: MenuSection = {
-        title: 'Yönetim',
-        menucontent: 'Sistem Yönetimi',
-        Items: menuItems
+      // Dashboard section
+      const dashboardSection: MenuSection = {
+        title: 'Dashboard',
+        menucontent: 'Dashboard',
+        Items: [
+          {
+            title: 'Dashboard',
+            id: 0,
+            icon: 'home',
+            path: '/dashboard',
+            type: 'link',
+          }
+        ]
       };
 
-      setMenu([dashboardSection, managementSection]);
+      // Sections oluştur
+      const sections: MenuSection[] = [dashboardSection];
+
+      if (categorizedModules.content.length > 0) {
+        sections.push({
+          title: 'İçerik Yönetimi',
+          menucontent: 'İçerik Yönetimi',
+          Items: categorizedModules.content
+        });
+      }
+
+      if (categorizedModules.donation.length > 0) {
+        sections.push({
+          title: 'Bağış Yönetimi',
+          menucontent: 'Bağış Yönetimi',
+          Items: categorizedModules.donation
+        });
+      }
+
+      if (categorizedModules.application.length > 0) {
+        sections.push({
+          title: 'Başvuru Yönetimi',
+          menucontent: 'Başvuru Yönetimi',
+          Items: categorizedModules.application
+        });
+      }
+
+      if (categorizedModules.system.length > 0) {
+        sections.push({
+          title: 'Sistem',
+          menucontent: 'Sistem',
+          Items: categorizedModules.system
+        });
+      }
+
+      setMenu(sections);
     } catch (error) {
       console.error('Dinamik menü yüklenirken hata:', error);
       setMenu([]);

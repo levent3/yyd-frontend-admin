@@ -1,4 +1,4 @@
-import { Fragment, useContext, useState, useMemo } from "react";
+import { Fragment, useContext, useState, useMemo, useEffect } from "react";
 import Menulist from "./Menulist";
 import { MenuList } from "../menu";
 import { useTranslation } from "react-i18next";
@@ -26,6 +26,18 @@ const SidebarMenu = () => {
   const [active, setActive] = useState(pathname ? pathname : "");
   const [prev, setPrev] = useState<number | undefined>();
   const [activeLink, setActiveLink] = useState<string | undefined>(active.split("/")[active.split("/").length - 1]);
+  const [openCategories, setOpenCategories] = useState<string[]>([]); // Ana kategorileri yönetmek için state - collapsible categories
+
+  // Ana kategoriyi aç/kapat
+  const toggleCategory = (categoryTitle: string) => {
+    setOpenCategories((prev) => {
+      if (prev.includes(categoryTitle)) {
+        return prev.filter((title) => title !== categoryTitle);
+      } else {
+        return [...prev, categoryTitle];
+      }
+    });
+  };
 
   const handleActive = (title: string , level: number) => {
     if (active.includes(title)) {
@@ -81,6 +93,27 @@ const SidebarMenu = () => {
     })).filter(mainMenu => mainMenu.Items.length > 0);
   }, [user, dynamicMenu, menuLoading]);
 
+  // Aktif sayfanın kategorisini otomatik aç
+  useEffect(() => {
+    if (activeMenuList && activeMenuList.length > 0 && pathname) {
+      activeMenuList.forEach((mainMenu) => {
+        const hasActiveItem = mainMenu.Items.some((item) => {
+          if (item.path === pathname || pathname.includes(item.pathSlice || '')) {
+            return true;
+          }
+          if (item.children) {
+            return item.children.some((child) => child.path === pathname || pathname.includes(child.pathSlice || ''));
+          }
+          return false;
+        });
+
+        if (hasActiveItem && !openCategories.includes(mainMenu.title)) {
+          setOpenCategories((prev) => [...prev, mainMenu.title]);
+        }
+      });
+    }
+  }, [pathname, activeMenuList]);
+
   const { t } = useTranslation();
   return (
     <nav className="sidebar-main">
@@ -98,13 +131,19 @@ const SidebarMenu = () => {
                       activeMenuList.map((mainMenu, i) => (
                         <Fragment key={i}>
                           <li className={`sidebar-main-title ${shouldHideMenu(mainMenu) ? "d-none" : ""}`}>
-                            <div>
+                            <div
+                              onClick={() => toggleCategory(mainMenu.title)}
+                              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                            >
                               <h6 className="lan-1">
                                 {t(`${mainMenu.title}`)}
                               </h6>
+                              <i className={`fa fa-angle-${openCategories.includes(mainMenu.title) ? 'down' : 'right'}`} style={{ fontSize: '14px' }}></i>
                             </div>
                           </li>
-                          <Menulist setActive={setActive} setActiveLink={setActiveLink}  activeLink={activeLink} handleActive={handleActive} active={active} MENUITEMS={mainMenu.Items} level={0}/>
+                          {openCategories.includes(mainMenu.title) && (
+                            <Menulist setActive={setActive} setActiveLink={setActiveLink}  activeLink={activeLink} handleActive={handleActive} active={active} MENUITEMS={mainMenu.Items} level={0}/>
+                          )}
                         </Fragment>
                       ))}
                   </div>
